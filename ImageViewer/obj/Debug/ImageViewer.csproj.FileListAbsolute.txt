@@ -1,0 +1,11 @@
+E:\rm_coding\ImageViewer\obj\Debug\ImageViewer.Form1.resources
+E:\rm_coding\ImageViewer\obj\Debug\ImageViewer.Properties.Resources.resources
+E:\rm_coding\ImageViewer\obj\Debug\ImageViewer.csproj.GenerateResource.cache
+E:\rm_coding\ImageViewer\bin\Debug\ImageViewer.exe.config
+E:\rm_coding\ImageViewer\bin\Debug\ImageViewer.exe
+E:\rm_coding\ImageViewer\bin\Debug\ImageViewer.pdb
+E:\rm_coding\ImageViewer\obj\Debug\ImageViewer.exe
+E:\rm_coding\ImageViewer\obj\Debug\ImageViewer.pdb
+E:\rm_coding\ImageViewer\obj\Debug\ImageViewer.csproj.AssemblyReference.cache
+E:\rm_coding\ImageViewer\obj\Debug\ImageViewer.exe.config
+E:\rm_coding\ImageViewer\obj\Debug\ImageViewer.csproj.CoreCompileInputs.cache
