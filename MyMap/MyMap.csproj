@@ -89,14 +89,53 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AttributeQueryDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AttributeQueryDialog.Designer.cs">
+      <DependentUpon>AttributeQueryDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="BookmarkDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="BookmarkDialog.Designer.cs">
+      <DependentUpon>BookmarkDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FeatureAttributeTable.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FeatureAttributeTable.Designer.cs">
+      <DependentUpon>FeatureAttributeTable.cs</DependentUpon>
+    </Compile>
     <Compile Include="MyMap.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="MyMap.Designer.cs">
       <DependentUpon>MyMap.cs</DependentUpon>
     </Compile>
+    <Compile Include="SimpleRenderDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SimpleRenderDialog.Designer.cs">
+      <DependentUpon>SimpleRenderDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UniqueValueRenderDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UniqueValueRenderDialog.Designer.cs">
+      <DependentUpon>UniqueValueRenderDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UniqueValueRenderHelper.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="BookmarkDialog.resx">
+      <DependentUpon>BookmarkDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FeatureAttributeTable.resx">
+      <DependentUpon>FeatureAttributeTable.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="MyMap.resx">
       <DependentUpon>MyMap.cs</DependentUpon>
     </EmbeddedResource>
@@ -109,6 +148,9 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="UniqueValueRenderDialog.resx">
+      <DependentUpon>UniqueValueRenderDialog.cs</DependentUpon>
+    </EmbeddedResource>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
