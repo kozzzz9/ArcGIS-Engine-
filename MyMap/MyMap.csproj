@@ -101,6 +101,30 @@
     <Compile Include="BookmarkDialog.Designer.cs">
       <DependentUpon>BookmarkDialog.cs</DependentUpon>
     </Compile>
+    <Compile Include="ClassBreakRenderDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ClassBreakRenderDialog.Designer.cs">
+      <DependentUpon>ClassBreakRenderDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="BufferAnalysisDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="BufferAnalysisDialog.Designer.cs">
+      <DependentUpon>BufferAnalysisDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FieldStatisticsDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FieldStatisticsDialog.Designer.cs">
+      <DependentUpon>FieldStatisticsDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="CoordinateLocationDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="CoordinateLocationDialog.Designer.cs">
+      <DependentUpon>CoordinateLocationDialog.cs</DependentUpon>
+    </Compile>
     <Compile Include="FeatureAttributeTable.cs">
       <SubType>Form</SubType>
     </Compile>

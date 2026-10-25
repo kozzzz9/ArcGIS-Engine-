@@ -35,6 +35,9 @@ namespace MyMap
         /// <summary>已添加的书签数量，用于书签自动命名。</summary>
         private int _bookmarkCount;
 
+        /// <summary>鹰眼图控件（运行时创建到“鹰眼”页签的面板中）。</summary>
+        private AxMapControl _overviewMapControl;
+
         #endregion
 
         #region 构造函数与窗体加载
@@ -56,6 +59,10 @@ namespace MyMap
 
             // 图层树右键菜单
             BuildTocContextMenu();
+
+            // 鹰眼图
+            InitializeOverview();
+            tabControl1.SelectedIndexChanged += new EventHandler(tabControl1_SelectedIndexChanged);
 
             // 工具栏补充常用地图浏览工具；失败时保留菜单操作入口
             try
@@ -121,6 +128,7 @@ namespace MyMap
             axMapControl1.Map.AddLayer(layer);
             axMapControl1.ActiveView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
             UpdateStatusBar();
+            SyncOverview();
         }
 
         /// <summary>
@@ -180,6 +188,7 @@ namespace MyMap
             axMapControl1.Map.AddLayer(layer);
             axMapControl1.ActiveView.PartialRefresh(esriViewDrawPhase.esriViewAll, null, null);
             UpdateStatusBar();
+            SyncOverview();
         }
 
         #endregion
@@ -417,10 +426,29 @@ namespace MyMap
                 return;
             }
 
-            using (FeatureAttributeTable form = new FeatureAttributeTable(featureLayer))
+            ShowAttributeTable(featureLayer);
+        }
+
+        /// <summary>
+        /// 打开属性表窗体，并订阅要素变化事件以刷新地图。
+        /// </summary>
+        /// <param name="featureLayer">待展示属性的矢量图层。</param>
+        private void ShowAttributeTable(IFeatureLayer featureLayer)
+        {
+            using (FeatureAttributeTable form = new FeatureAttributeTable(featureLayer, axMapControl1.ActiveView))
             {
+                form.FeaturesChanged += attributeTable_FeaturesChanged;
                 form.ShowDialog(this);
             }
+        }
+
+        /// <summary>
+        /// 属性表中要素被修改或删除后刷新地图显示。
+        /// </summary>
+        private void attributeTable_FeaturesChanged(object sender, EventArgs e)
+        {
+            axMapControl1.Refresh();
+            UpdateStatusBar();
         }
 
         #endregion
@@ -642,6 +670,7 @@ namespace MyMap
             axMapControl1.Map.DeleteLayer(selectedLayer);
             axMapControl1.ActiveView.Refresh();
             UpdateStatusBar();
+            SyncOverview();
         }
 
         /// <summary>
@@ -668,6 +697,7 @@ namespace MyMap
             axMapControl1.Map.ClearLayers();
             axMapControl1.ActiveView.Refresh();
             UpdateStatusBar();
+            SyncOverview();
         }
 
         /// <summary>
@@ -701,6 +731,7 @@ namespace MyMap
                     axMapControl1.LoadMxFile(dialog.FileName, null, null);
                     axMapControl1.ActiveView.Refresh();
                     UpdateStatusBar();
+                    SyncOverview();
                 }
                 catch (Exception ex)
                 {
@@ -747,6 +778,34 @@ namespace MyMap
         }
 
         /// <summary>
+        /// 添加图层文件（.lyr）到地图控件。
+        /// </summary>
+        private void addLayerFileMenuItem_Click(object sender, EventArgs e)
+        {
+            using (OpenFileDialog dialog = new OpenFileDialog())
+            {
+                dialog.Title = "添加图层文件";
+                dialog.Filter = "图层文件(*.lyr)|*.lyr";
+                if (dialog.ShowDialog(this) != DialogResult.OK)
+                {
+                    return;
+                }
+
+                try
+                {
+                    axMapControl1.AddLayerFromFile(dialog.FileName, 0);
+                    axMapControl1.ActiveView.PartialRefresh(esriViewDrawPhase.esriViewAll, null, null);
+                    UpdateStatusBar();
+                    SyncOverview();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("添加图层文件失败：" + ex.Message);
+                }
+            }
+        }
+
+        /// <summary>
         /// 将当前地图视图导出为图片（PNG/JPG）。
         /// </summary>
         private void exportMapImageMenuItem_Click(object sender, EventArgs e)
@@ -760,7 +819,7 @@ namespace MyMap
             using (SaveFileDialog dialog = new SaveFileDialog())
             {
                 dialog.Title = "导出地图为图片";
-                dialog.Filter = "PNG 图片(*.png)|*.png|JPEG 图片(*.jpg)|*.jpg";
+                dialog.Filter = "PNG 图片(*.png)|*.png|JPEG 图片(*.jpg)|*.jpg|PDF 文档(*.pdf)|*.pdf";
                 dialog.OverwritePrompt = true;
                 if (dialog.ShowDialog(this) != DialogResult.OK)
                 {
@@ -772,9 +831,9 @@ namespace MyMap
         }
 
         /// <summary>
-        /// 按文件扩展名将当前地图视图导出为 PNG 或 JPG 图片。
+        /// 按文件扩展名将当前地图视图导出为 PNG、JPG 或 PDF。
         /// </summary>
-        /// <param name="fileName">目标图片文件路径。</param>
+        /// <param name="fileName">目标文件路径。</param>
         private void ExportActiveView(string fileName)
         {
             string extension = Path.GetExtension(fileName).ToLower();
@@ -782,6 +841,10 @@ namespace MyMap
             if (extension == ".jpg" || extension == ".jpeg")
             {
                 export = (IExport)new ExportJPEG();
+            }
+            else if (extension == ".pdf")
+            {
+                export = (IExport)new ExportPDF();
             }
             else
             {
@@ -812,6 +875,151 @@ namespace MyMap
             {
                 MessageBox.Show("地图导出失败：" + ex.Message);
             }
+        }
+
+        /// <summary>
+        /// 导出选中要素菜单：把选中图层的选中要素导出为新的 Shapefile。
+        /// </summary>
+        private void exportSelectedFeaturesMenuItem_Click(object sender, EventArgs e)
+        {
+            IFeatureLayer sourceLayer = GetSelectedFeatureLayer();
+            if (sourceLayer == null)
+            {
+                return;
+            }
+
+            IFeatureSelection featureSelection = sourceLayer as IFeatureSelection;
+            if (featureSelection == null || featureSelection.SelectionSet == null ||
+                featureSelection.SelectionSet.Count == 0)
+            {
+                MessageBox.Show("请先选择该图层中的要素（属性查询、点选查询或框选查询）！");
+                return;
+            }
+
+            using (SaveFileDialog dialog = new SaveFileDialog())
+            {
+                dialog.Title = "导出选中要素为 Shapefile";
+                dialog.Filter = "shapefile文件（*.shp）|*.shp";
+                dialog.OverwritePrompt = true;
+                if (dialog.ShowDialog(this) != DialogResult.OK)
+                {
+                    return;
+                }
+
+                string folder = Path.GetDirectoryName(dialog.FileName);
+                string fileName = Path.GetFileNameWithoutExtension(dialog.FileName);
+
+                try
+                {
+                    int count = ExportFeaturesToShapefile(sourceLayer, folder, fileName);
+                    MessageBox.Show(string.Format("成功导出 {0} 个要素到：{1}", count, dialog.FileName));
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("导出选中要素失败：" + ex.Message);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 把图层中的选中要素导出为新的 Shapefile。
+        /// </summary>
+        /// <param name="sourceLayer">源矢量图层。</param>
+        /// <param name="folder">目标文件夹。</param>
+        /// <param name="fileName">目标 Shapefile 名（不含扩展名）。</param>
+        /// <returns>导出的要素数量。</returns>
+        private int ExportFeaturesToShapefile(IFeatureLayer sourceLayer, string folder, string fileName)
+        {
+            IFeatureClass sourceClass = sourceLayer.FeatureClass;
+
+            // 1. 把目标文件夹作为 shapefile 工作空间
+            IWorkspaceFactory workspaceFactory = new ShapefileWorkspaceFactory();
+            IFeatureWorkspace targetWorkspace =
+                (IFeatureWorkspace)workspaceFactory.OpenFromFile(folder, 0);
+
+            // 2. 用字段检查器转换源字段（字段名合法性、重名处理）
+            IFieldChecker fieldChecker = new FieldChecker();
+            fieldChecker.ValidateWorkspace = (IWorkspace)targetWorkspace;
+            IEnumFieldError enumFieldError;
+            IFields validatedFields;
+            fieldChecker.Validate(sourceClass.Fields, out enumFieldError, out validatedFields);
+
+            // 3. 重新设置几何字段的 GeometryDef（shapefile 需要明确的几何类型）
+            for (int i = 0; i < validatedFields.FieldCount; i++)
+            {
+                IField field = validatedFields.get_Field(i);
+                if (field.Type != esriFieldType.esriFieldTypeGeometry)
+                {
+                    continue;
+                }
+
+                IGeometryDef geometryDef = new GeometryDef();
+                IGeometryDefEdit geometryDefEdit = (IGeometryDefEdit)geometryDef;
+                geometryDefEdit.GeometryType_2 = sourceClass.ShapeType;
+                geometryDefEdit.GridCount_2 = 1;
+                geometryDefEdit.set_GridSize(0, 0);
+                IFieldEdit fieldEdit = (IFieldEdit)validatedFields.get_Field(i);
+                fieldEdit.GeometryDef_2 = geometryDef;
+            }
+
+            // 4. 创建目标要素类
+            IFeatureClass targetClass = targetWorkspace.CreateFeatureClass(
+                fileName + ".shp",
+                validatedFields,
+                null,
+                null,
+                esriFeatureType.esriFTSimple,
+                sourceClass.ShapeFieldName,
+                "");
+
+            // 5. 逐条复制选中要素（几何复制 + 同名字段值复制）
+            IFeatureSelection featureSelection = sourceLayer as IFeatureSelection;
+            ICursor selectedCursor;
+            featureSelection.SelectionSet.Search(null, true, out selectedCursor);
+            IFeatureCursor sourceCursor = (IFeatureCursor)selectedCursor;
+
+            IFeatureBuffer featureBuffer = targetClass.CreateFeatureBuffer();
+            IFeatureCursor insertCursor = targetClass.Insert(true);
+            int count = 0;
+
+            try
+            {
+                IFeature sourceFeature = sourceCursor.NextFeature();
+                while (sourceFeature != null)
+                {
+                    // ShapeCopy 返回几何的副本
+                    featureBuffer.Shape = sourceFeature.ShapeCopy;
+
+                    for (int i = 0; i < validatedFields.FieldCount; i++)
+                    {
+                        IField targetField = validatedFields.get_Field(i);
+                        if (targetField.Type == esriFieldType.esriFieldTypeGeometry ||
+                            targetField.Type == esriFieldType.esriFieldTypeOID)
+                        {
+                            continue;
+                        }
+
+                        int sourceIndex = sourceClass.Fields.FindField(targetField.Name);
+                        if (sourceIndex >= 0)
+                        {
+                            featureBuffer.set_Value(i, sourceFeature.get_Value(sourceIndex));
+                        }
+                    }
+
+                    insertCursor.InsertFeature(featureBuffer);
+                    count++;
+                    sourceFeature = sourceCursor.NextFeature();
+                }
+                insertCursor.Flush();
+            }
+            finally
+            {
+                UniqueValueRenderHelper.ReleaseComObject(insertCursor);
+                UniqueValueRenderHelper.ReleaseComObject(sourceCursor);
+                UniqueValueRenderHelper.ReleaseComObject(featureBuffer);
+            }
+
+            return count;
         }
 
         #endregion
@@ -910,6 +1118,48 @@ namespace MyMap
             extent.Expand(1.2, 1.2, true);
             axMapControl1.ActiveView.Extent = extent;
             axMapControl1.ActiveView.Refresh();
+        }
+
+        /// <summary>
+        /// 坐标定位菜单：输入坐标后把地图居中到该位置并打十字标记。
+        /// </summary>
+        private void coordinateLocationMenuItem_Click(object sender, EventArgs e)
+        {
+            using (CoordinateLocationDialog dialog = new CoordinateLocationDialog())
+            {
+                if (dialog.ShowDialog(this) != DialogResult.OK)
+                {
+                    return;
+                }
+
+                IPoint point = new ArcPoint();
+                point.PutCoords(dialog.LocationX, dialog.LocationY);
+
+                // 在该位置添加一个十字标记
+                IMarkerElement markerElement = (IMarkerElement)new MarkerElement();
+                IElement element = (IElement)markerElement;
+                element.Geometry = point;
+
+                ISimpleMarkerSymbol markerSymbol = new SimpleMarkerSymbol();
+                markerSymbol.Style = esriSimpleMarkerStyle.esriSMSCross;
+                markerSymbol.Size = 16;
+                IRgbColor red = new RgbColor();
+                red.Red = 255;
+                markerSymbol.Color = red;
+                markerElement.Symbol = (IMarkerSymbol)markerSymbol;
+
+                IGraphicsContainer container = (IGraphicsContainer)axMapControl1.Map;
+                container.AddElement(element, 0);
+
+                // 把该点作为视图中心
+                IEnvelope extent = axMapControl1.ActiveView.Extent;
+                extent.CenterAt(point);
+                axMapControl1.ActiveView.Extent = extent;
+                axMapControl1.ActiveView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
+
+                statusStripInfoLabel.Text = string.Format(
+                    "已定位到坐标：X = {0:F2}，Y = {1:F2}", dialog.LocationX, dialog.LocationY);
+            }
         }
 
         /// <summary>
@@ -1020,12 +1270,14 @@ namespace MyMap
         #region 扩展功能：图层树右键菜单
 
         /// <summary>
-        /// 构建图层树右键菜单：缩放至图层、打开属性表、移除图层。
+        /// 构建图层树右键菜单：图层属性、缩放至图层、打开属性表、移除图层。
         /// </summary>
         private void BuildTocContextMenu()
         {
             _tocContextMenu = new ContextMenuStrip();
 
+            ToolStripMenuItem layerPropertyItem = new ToolStripMenuItem("图层属性");
+            layerPropertyItem.Click += new EventHandler(tocLayerPropertyMenuItem_Click);
             ToolStripMenuItem zoomToLayerItem = new ToolStripMenuItem("缩放至图层");
             zoomToLayerItem.Click += new EventHandler(tocZoomToLayerMenuItem_Click);
             ToolStripMenuItem viewAttributeItem = new ToolStripMenuItem("打开属性表");
@@ -1033,9 +1285,24 @@ namespace MyMap
             ToolStripMenuItem removeLayerItem = new ToolStripMenuItem("移除图层");
             removeLayerItem.Click += new EventHandler(tocRemoveLayerMenuItem_Click);
 
+            _tocContextMenu.Items.Add(layerPropertyItem);
             _tocContextMenu.Items.Add(zoomToLayerItem);
             _tocContextMenu.Items.Add(viewAttributeItem);
             _tocContextMenu.Items.Add(removeLayerItem);
+        }
+
+        /// <summary>
+        /// 右键菜单：把图层属性同步到属性面板并切换到属性页。
+        /// </summary>
+        private void tocLayerPropertyMenuItem_Click(object sender, EventArgs e)
+        {
+            if (_contextMenuLayer == null)
+            {
+                return;
+            }
+
+            propertyGrid1.SelectedObject = _contextMenuLayer;
+            tabControl1.SelectedTab = Property;
         }
 
         /// <summary>
@@ -1098,10 +1365,7 @@ namespace MyMap
                 return;
             }
 
-            using (FeatureAttributeTable form = new FeatureAttributeTable(featureLayer))
-            {
-                form.ShowDialog(this);
-            }
+            ShowAttributeTable(featureLayer);
         }
 
         /// <summary>
@@ -1127,6 +1391,7 @@ namespace MyMap
             axMapControl1.Map.DeleteLayer(_contextMenuLayer);
             axMapControl1.ActiveView.Refresh();
             UpdateStatusBar();
+            SyncOverview();
         }
 
         #endregion
@@ -1173,6 +1438,80 @@ namespace MyMap
             }
             IGeometry searchGeometry = topoOperator.Buffer(tolerance);
 
+            SelectFeaturesByGeometry(searchGeometry);
+            UpdateStatusBar();
+        }
+
+        /// <summary>
+        /// 刷新状态栏中的图层与选中要素信息。
+        /// </summary>
+        private void UpdateStatusBar()
+        {
+            statusStripInfoLabel.Text = string.Format(
+                "图层数：{0}    选中要素：{1}",
+                axMapControl1.Map.LayerCount,
+                axMapControl1.Map.SelectionCount);
+        }
+
+        #endregion
+
+        #region 扩展功能：空间选择
+
+        /// <summary>
+        /// 框选查询菜单：在地图上拖出一个矩形，选择范围内的要素。
+        /// </summary>
+        private void rectangleSelectMenuItem_Click(object sender, EventArgs e)
+        {
+            if (axMapControl1.Map.LayerCount == 0)
+            {
+                MessageBox.Show("请先添加矢量图层！");
+                return;
+            }
+
+            IActiveView activeView = (IActiveView)axMapControl1.ActiveView;
+            IRubberBand rubberBand = new RubberEnvelope();
+            IGeometry geometry = rubberBand.TrackNew(activeView.ScreenDisplay, null);
+            if (geometry == null)
+            {
+                return;
+            }
+
+            int count = SelectFeaturesByGeometry(geometry);
+            UpdateStatusBar();
+            statusStripInfoLabel.Text = string.Format("框选查询完成，选中 {0} 个要素。", count);
+        }
+
+        /// <summary>
+        /// 圈选查询菜单：在地图上绘制一个多边形，选择范围内的要素。
+        /// </summary>
+        private void polygonSelectMenuItem_Click(object sender, EventArgs e)
+        {
+            if (axMapControl1.Map.LayerCount == 0)
+            {
+                MessageBox.Show("请先添加矢量图层！");
+                return;
+            }
+
+            IActiveView activeView = (IActiveView)axMapControl1.ActiveView;
+            IRubberBand rubberBand = new RubberPolygon();
+            IGeometry geometry = rubberBand.TrackNew(activeView.ScreenDisplay, null);
+            if (geometry == null)
+            {
+                return;
+            }
+
+            int count = SelectFeaturesByGeometry(geometry);
+            UpdateStatusBar();
+            statusStripInfoLabel.Text = string.Format("圈选查询完成，选中 {0} 个要素。", count);
+        }
+
+        /// <summary>
+        /// 按给定的几何范围选择全部可见矢量图层中的要素。
+        /// </summary>
+        /// <param name="searchGeometry">空间查询范围几何。</param>
+        /// <returns>选中要素的数量。</returns>
+        private int SelectFeaturesByGeometry(IGeometry searchGeometry)
+        {
             ISpatialFilter spatialFilter = new SpatialFilter();
             spatialFilter.Geometry = searchGeometry;
             spatialFilter.SpatialRel = esriSpatialRelEnum.esriSpatialRelIntersects;
@@ -1200,18 +1539,515 @@ namespace MyMap
             }
 
             axMapControl1.ActiveView.PartialRefresh(esriViewDrawPhase.esriViewGeoSelection, null, null);
-            UpdateStatusBar();
+            return axMapControl1.Map.SelectionCount;
+        }
+
+        #endregion
+
+        #region 扩展功能：高级分析
+
+        /// <summary>
+        /// 分级渲染菜单：按数值字段分级设色（等间距/自然间断点/分位数）。
+        /// </summary>
+        private void classBreakRenderMenuItem_Click(object sender, EventArgs e)
+        {
+            IFeatureLayer featureLayer = GetSelectedFeatureLayer();
+            if (featureLayer == null)
+            {
+                return;
+            }
+
+            IFeatureClass featureClass = featureLayer.FeatureClass;
+            if (featureClass == null)
+            {
+                MessageBox.Show("该图层没有对应的要素类！");
+                return;
+            }
+
+            using (ClassBreakRenderDialog dialog = new ClassBreakRenderDialog(featureClass))
+            {
+                if (dialog.ShowDialog(this) != DialogResult.OK)
+                {
+                    return;
+                }
+
+                try
+                {
+                    IClassBreaksRenderer renderer = BuildClassBreakRenderer(
+                        featureLayer,
+                        dialog.SelectedField,
+                        dialog.MethodIndex,
+                        dialog.ClassCount,
+                        dialog.RampIndex,
+                        dialog.ExcludeZero);
+                    if (renderer == null)
+                    {
+                        return;
+                    }
+
+                    IGeoFeatureLayer geoFeatureLayer = featureLayer as IGeoFeatureLayer;
+                    if (geoFeatureLayer == null)
+                    {
+                        MessageBox.Show("该图层不支持渲染！");
+                        return;
+                    }
+                    geoFeatureLayer.Renderer = (IFeatureRenderer)renderer;
+                    axMapControl1.Refresh();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("分级渲染失败：" + ex.Message);
+                }
+            }
         }
 
         /// <summary>
-        /// 刷新状态栏中的图层与选中要素信息。
+        /// 读取字段数值并按指定方法生成分级渲染器。
         /// </summary>
-        private void UpdateStatusBar()
+        /// <param name="featureLayer">待渲染的矢量图层。</param>
+        /// <param name="fieldName">分级字段名。</param>
+        /// <param name="methodIndex">分级方法索引：0 等间距、1 自然间断点、2 分位数。</param>
+        /// <param name="classCount">分级数量。</param>
+        /// <param name="rampIndex">色带类型索引。</param>
+        /// <param name="excludeZero">是否排除空值与 0 值。</param>
+        /// <returns>分级渲染器；失败时返回 null。</returns>
+        private IClassBreaksRenderer BuildClassBreakRenderer(
+            IFeatureLayer featureLayer,
+            string fieldName,
+            int methodIndex,
+            int classCount,
+            int rampIndex,
+            bool excludeZero)
         {
-            statusStripInfoLabel.Text = string.Format(
-                "图层数：{0}    选中要素：{1}",
-                axMapControl1.Map.LayerCount,
-                axMapControl1.Map.SelectionCount);
+            IFeatureClass featureClass = featureLayer.FeatureClass;
+            int fieldIndex = featureClass.Fields.FindField(fieldName);
+            if (fieldIndex < 0)
+            {
+                MessageBox.Show("未找到字段：" + fieldName);
+                return null;
+            }
+
+            // 读取字段全部数值并升序排序
+            List<double> values = new List<double>();
+            IQueryFilter queryFilter = new QueryFilter();
+            queryFilter.SubFields = fieldName;
+            IFeatureCursor cursor = featureClass.Search(queryFilter, false);
+            try
+            {
+                IFeature feature = cursor.NextFeature();
+                while (feature != null)
+                {
+                    object value = feature.get_Value(fieldIndex);
+                    if (value != null && value != DBNull.Value)
+                    {
+                        double number;
+                        if (double.TryParse(UniqueValueRenderHelper.FormatValue(value), out number))
+                        {
+                            if (!excludeZero || Math.Abs(number) > 0.0000001)
+                            {
+                                values.Add(number);
+                            }
+                        }
+                    }
+                    feature = cursor.NextFeature();
+                }
+            }
+            finally
+            {
+                UniqueValueRenderHelper.ReleaseComObject(cursor);
+            }
+
+            if (values.Count == 0)
+            {
+                MessageBox.Show("该字段没有可用的数值！");
+                return null;
+            }
+            if (values.Count < classCount)
+            {
+                classCount = values.Count;
+            }
+            values.Sort();
+
+            // 按分级方法计算分级断点
+            IClassifyGEN classify;
+            if (methodIndex == 1)
+            {
+                classify = new NaturalBreaks();
+            }
+            else if (methodIndex == 2)
+            {
+                classify = new Quantile();
+            }
+            else
+            {
+                classify = new EqualInterval();
+            }
+            classify.Classify(values.ToArray(), null, ref classCount);
+            double[] breaks = (double[])classify.ClassBreaks;
+            if (breaks == null || breaks.Length < 2)
+            {
+                MessageBox.Show("分级计算失败！");
+                return null;
+            }
+            int realCount = breaks.Length - 1;
+
+            // 用当前符号作为模板，按色带逐级生成符号
+            ISymbol template = GetCurrentSymbol(featureLayer)
+                ?? UniqueValueRenderHelper.CreateDefaultTemplate(GetLayerGeometryType(featureLayer));
+            List<IColor> colors = UniqueValueRenderHelper.CreateColors(rampIndex, realCount);
+            esriGeometryType geometryType = GetLayerGeometryType(featureLayer);
+
+            IClassBreaksRenderer renderer = new ClassBreaksRenderer();
+            renderer.Field = fieldName;
+            renderer.BreakCount = realCount;
+            renderer.SortClassesAscending = true;
+            for (int i = 0; i < realCount; i++)
+            {
+                renderer.set_Break(i, breaks[i + 1]);
+                renderer.set_Label(i, string.Format("{0:F2} - {1:F2}", breaks[i], breaks[i + 1]));
+                renderer.set_Symbol(i, UniqueValueRenderHelper.CreateSymbol(
+                    template, geometryType, colors[i % colors.Count]));
+            }
+            return renderer;
+        }
+
+        /// <summary>
+        /// 缓冲区分析菜单：对当前选中的要素生成缓冲区并以图形显示。
+        /// </summary>
+        private void bufferAnalysisMenuItem_Click(object sender, EventArgs e)
+        {
+            if (axMapControl1.Map.LayerCount == 0)
+            {
+                MessageBox.Show("请先添加矢量图层！");
+                return;
+            }
+
+            if (axMapControl1.Map.SelectionCount == 0)
+            {
+                MessageBox.Show("请先通过属性查询、点选查询或框选查询选择要素！");
+                return;
+            }
+
+            using (BufferAnalysisDialog dialog = new BufferAnalysisDialog())
+            {
+                if (dialog.ShowDialog(this) != DialogResult.OK)
+                {
+                    return;
+                }
+
+                double distance = dialog.BufferDistance;
+                IEnumFeature enumFeature = (IEnumFeature)axMapControl1.Map.FeatureSelection;
+                IGraphicsContainer container = (IGraphicsContainer)axMapControl1.Map;
+                int count = 0;
+
+                enumFeature.Reset();
+                IFeature feature = enumFeature.Next();
+                while (feature != null)
+                {
+                    IGeometry geometry = feature.Shape;
+                    if (geometry != null && !geometry.IsEmpty)
+                    {
+                        ITopologicalOperator topoOperator = (ITopologicalOperator)geometry;
+                        IGeometry bufferGeometry = topoOperator.Buffer(distance);
+
+                        IElement element = (IElement)new PolygonElement();
+                        element.Geometry = bufferGeometry;
+                        ((IFillShapeElement)element).Symbol = (IFillSymbol)CreateBufferSymbol();
+                        ((IElementProperties)element).Name = "缓冲区";
+                        container.AddElement(element, 0);
+                        count++;
+                    }
+                    feature = enumFeature.Next();
+                }
+
+                axMapControl1.ActiveView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
+                statusStripInfoLabel.Text = string.Format("缓冲区分析完成，共生成 {0} 个缓冲区。", count);
+            }
+        }
+
+        /// <summary>
+        /// 创建缓冲区显示符号：半透明红色填充加深红边线。
+        /// </summary>
+        private static ISymbol CreateBufferSymbol()
+        {
+            IRgbColor fillColor = new RgbColor();
+            fillColor.Red = 255;
+            fillColor.Transparency = 40;
+
+            ISimpleLineSymbol outline = new SimpleLineSymbol();
+            outline.Style = esriSimpleLineStyle.esriSLSSolid;
+            outline.Width = 1.5;
+            IRgbColor outlineColor = new RgbColor();
+            outlineColor.Red = 180;
+            outline.Color = outlineColor;
+
+            ISimpleFillSymbol fillSymbol = new SimpleFillSymbol();
+            fillSymbol.Style = esriSimpleFillStyle.esriSFSSolid;
+            fillSymbol.Color = fillColor;
+            fillSymbol.Outline = outline;
+
+            return (ISymbol)fillSymbol;
+        }
+
+        /// <summary>
+        /// 字段统计菜单：统计数值字段的和、均值、最值与标准差。
+        /// </summary>
+        private void fieldStatisticsMenuItem_Click(object sender, EventArgs e)
+        {
+            List<IFeatureLayer> featureLayers = GetFeatureLayers();
+            if (featureLayers.Count == 0)
+            {
+                MessageBox.Show("请先添加矢量图层！");
+                return;
+            }
+
+            using (FieldStatisticsDialog dialog = new FieldStatisticsDialog(featureLayers))
+            {
+                dialog.ShowDialog(this);
+            }
+        }
+
+        /// <summary>
+        /// 清除分析结果菜单：删除地图中缓冲区等全部图形元素。
+        /// </summary>
+        private void clearAnalysisMenuItem_Click(object sender, EventArgs e)
+        {
+            IGraphicsContainer container = (IGraphicsContainer)axMapControl1.Map;
+            container.DeleteAllElements();
+            axMapControl1.ActiveView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
+            statusStripInfoLabel.Text = "已清除分析结果。";
+        }
+
+        #endregion
+
+        #region 扩展功能：制图整饰
+
+        /// <summary>
+        /// 添加图例菜单：在制版视图右侧添加图例。
+        /// </summary>
+        private void addLegendMenuItem_Click(object sender, EventArgs e)
+        {
+            if (!EnsurePageLayoutSynced())
+            {
+                return;
+            }
+            AddMapSurround("esriCarto.Legend", 0.76, 0.28, 0.97, 0.85);
+        }
+
+        /// <summary>
+        /// 添加指北针菜单：在制版视图右上角添加指北针。
+        /// </summary>
+        private void addNorthArrowMenuItem_Click(object sender, EventArgs e)
+        {
+            if (!EnsurePageLayoutSynced())
+            {
+                return;
+            }
+            AddMapSurround("esriCarto.MarkerNorthArrow", 0.85, 0.86, 0.97, 0.98);
+        }
+
+        /// <summary>
+        /// 添加比例尺菜单：在制版视图底部添加比例尺。
+        /// </summary>
+        private void addScaleBarMenuItem_Click(object sender, EventArgs e)
+        {
+            if (!EnsurePageLayoutSynced())
+            {
+                return;
+            }
+            AddMapSurround("esriCarto.AlternatingScaleBar", 0.30, 0.02, 0.70, 0.10);
+        }
+
+        /// <summary>
+        /// 添加标题菜单：在制版视图顶部添加地图标题。
+        /// </summary>
+        private void addMapTitleMenuItem_Click(object sender, EventArgs e)
+        {
+            if (!EnsurePageLayoutSynced())
+            {
+                return;
+            }
+            AddMapSurround("esriCarto.MapTitle", 0.25, 0.90, 0.75, 0.97);
+        }
+
+        /// <summary>
+        /// 确认制版视图可用：有图层时先同步当前地图。
+        /// </summary>
+        /// <returns>制版视图是否可用。</returns>
+        private bool EnsurePageLayoutSynced()
+        {
+            if (axMapControl1.Map.LayerCount == 0)
+            {
+                MessageBox.Show("请先添加图层！");
+                return false;
+            }
+
+            SyncPageLayout();
+            return true;
+        }
+
+        /// <summary>
+        /// 按页面比例位置在制版视图中添加地图整饰元素（图例、指北针等）。
+        /// </summary>
+        /// <param name="surroundProgId">整饰元素的 ProgID。</param>
+        /// <param name="x1">相对页面左下角 X 最小比例。</param>
+        /// <param name="y1">相对页面左下角 Y 最小比例。</param>
+        /// <param name="x2">相对页面左下角 X 最大比例。</param>
+        /// <param name="y2">相对页面左下角 Y 最大比例。</param>
+        private void AddMapSurround(string surroundProgId, double x1, double y1, double x2, double y2)
+        {
+            IGraphicsContainer container = axPageLayoutControl1.GraphicsContainer;
+            IMapFrame mapFrame = container.FindFrame(axPageLayoutControl1.ActiveView.FocusMap) as IMapFrame;
+            if (mapFrame == null)
+            {
+                MessageBox.Show("未找到制版视图的地图框！");
+                return;
+            }
+
+            UID uid = new UID();
+            uid.Value = surroundProgId;
+            IMapSurroundFrame surroundFrame = mapFrame.CreateSurroundFrame(uid, null);
+
+            // 按页面范围的比例计算元素位置
+            IActiveView activeView = (IActiveView)axPageLayoutControl1.ActiveView;
+            IEnvelope pageExtent = activeView.Extent;
+            double width = pageExtent.Width;
+            double height = pageExtent.Height;
+            IEnvelope envelope = (IEnvelope)new Envelope();
+            envelope.PutCoords(
+                pageExtent.XMin + width * x1,
+                pageExtent.YMin + height * y1,
+                pageExtent.XMin + width * x2,
+                pageExtent.YMin + height * y2);
+
+            IElement element = (IElement)surroundFrame;
+            element.Geometry = envelope;
+            container.AddElement(element, 0);
+            axPageLayoutControl1.ActiveView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
+        }
+
+        #endregion
+
+        #region 扩展功能：鹰眼图
+
+        /// <summary>
+        /// 获取鹰眼图是否已就绪（控件已创建且句柄已激活）。
+        /// 鹰眼控件位于非激活页签时句柄不会创建，此时访问 ActiveX 属性会抛出
+        /// AxHost.InvalidActiveXStateException，因此访问前必须判断就绪状态。
+        /// </summary>
+        private bool IsOverviewReady
+        {
+            get { return _overviewMapControl != null && _overviewMapControl.IsHandleCreated && !_overviewMapControl.IsDisposed; }
+        }
+
+        /// <summary>
+        /// 初始化鹰眼图：在“鹰眼”页签中创建地图控件（句柄由页签首次显示时创建）。
+        /// </summary>
+        private void InitializeOverview()
+        {
+            if (_overviewMapControl != null)
+            {
+                return;
+            }
+
+            _overviewMapControl = new AxMapControl();
+            _overviewMapControl.Dock = DockStyle.Fill;
+            pnlOverview.Controls.Add(_overviewMapControl);
+            _overviewMapControl.OnMouseDown += new IMapControlEvents2_Ax_OnMouseDownEventHandler(overviewMapControl_OnMouseDown);
+            _overviewMapControl.HandleCreated += new EventHandler(overviewMapControl_HandleCreated);
+        }
+
+        /// <summary>
+        /// “鹰眼”页签显示：控件句柄创建完成后同步一次主地图。
+        /// </summary>
+        private void tabControl1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (tabControl1.SelectedTab == Overview)
+            {
+                InitializeOverview();
+                // 延迟到页签布局完成、控件句柄创建之后再同步
+                BeginInvoke(new MethodInvoker(SyncOverview));
+            }
+        }
+
+        /// <summary>
+        /// 鹰眼图控件句柄创建完成（页签首次显示）。
+        /// 用 BeginInvoke 把同步推迟到控件激活完成之后执行。
+        /// </summary>
+        private void overviewMapControl_HandleCreated(object sender, EventArgs e)
+        {
+            BeginInvoke(new MethodInvoker(SyncOverview));
+        }
+
+        /// <summary>
+        /// 鹰眼图鼠标按下：主地图以点击位置为中心。
+        /// </summary>
+        private void overviewMapControl_OnMouseDown(object sender, IMapControlEvents2_OnMouseDownEvent e)
+        {
+            IPoint point = new ArcPoint();
+            point.PutCoords(e.mapX, e.mapY);
+            axMapControl1.CenterAt(point);
+            axMapControl1.ActiveView.Refresh();
+        }
+
+        /// <summary>
+        /// 把主地图的图层同步到鹰眼图，并把视图缩放到全图。
+        /// </summary>
+        private void SyncOverview()
+        {
+            if (!IsOverviewReady)
+            {
+                return;
+            }
+
+            IObjectCopy objectCopy = (IObjectCopy)new ObjectCopy();
+            object copiedMap = objectCopy.Copy(axMapControl1.Map);
+            object targetMap = _overviewMapControl.Map;
+            objectCopy.Overwrite(copiedMap, ref targetMap);
+
+            _overviewMapControl.ActiveView.Extent = _overviewMapControl.FullExtent;
+            _overviewMapControl.ActiveView.Refresh();
+            DrawOverviewExtent();
+        }
+
+        /// <summary>
+        /// 在鹰眼图上绘制表示主地图当前范围的红色矩形。
+        /// </summary>
+        private void DrawOverviewExtent()
+        {
+            if (!IsOverviewReady || axMapControl1.Map.LayerCount == 0)
+            {
+                return;
+            }
+
+            IGraphicsContainer container = (IGraphicsContainer)_overviewMapControl.Map;
+            container.DeleteAllElements();
+
+            IElement element = (IElement)new RectangleElement();
+            element.Geometry = axMapControl1.ActiveView.Extent;
+
+            ISimpleLineSymbol outline = new SimpleLineSymbol();
+            outline.Style = esriSimpleLineStyle.esriSLSSolid;
+            outline.Width = 2;
+            IRgbColor red = new RgbColor();
+            red.Red = 255;
+            outline.Color = red;
+
+            ISimpleFillSymbol fillSymbol = new SimpleFillSymbol();
+            fillSymbol.Style = esriSimpleFillStyle.esriSFSNull;
+            fillSymbol.Outline = outline;
+            ((IFillShapeElement)element).Symbol = (IFillSymbol)fillSymbol;
+
+            container.AddElement(element, 0);
+            _overviewMapControl.ActiveView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
+        }
+
+        /// <summary>
+        /// 主地图范围变化时更新鹰眼图上的范围矩形。
+        /// </summary>
+        private void axMapControl1_OnExtentUpdated(object sender, IMapControlEvents2_OnExtentUpdatedEvent e)
+        {
+            DrawOverviewExtent();
         }
 
         #endregion
