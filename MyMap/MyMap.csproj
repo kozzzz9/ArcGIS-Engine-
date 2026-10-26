@@ -131,6 +131,7 @@
     <Compile Include="FeatureAttributeTable.Designer.cs">
       <DependentUpon>FeatureAttributeTable.cs</DependentUpon>
     </Compile>
+    <Compile Include="MyMxdDocClass.cs" />
     <Compile Include="MyMap.cs">
       <SubType>Form</SubType>
     </Compile>

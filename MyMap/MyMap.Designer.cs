@@ -58,7 +58,9 @@ namespace MyMap
             this.addshplayerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.添加栅格图层ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.添加图层文件ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.新建Mxd文档ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.打开地图文档ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.保存Mxd文档ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.另存地图文档ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.导出地图为图片ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.导出选中要素ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -361,7 +363,9 @@ namespace MyMap
             this.文件ToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.添加图层ToolStripMenuItem,
             this.toolStripSeparator1,
+            this.新建Mxd文档ToolStripMenuItem,
             this.打开地图文档ToolStripMenuItem,
+            this.保存Mxd文档ToolStripMenuItem,
             this.另存地图文档ToolStripMenuItem,
             this.导出地图为图片ToolStripMenuItem,
             this.导出选中要素ToolStripMenuItem});
@@ -397,15 +401,29 @@ namespace MyMap
             // 
             this.打开地图文档ToolStripMenuItem.Name = "打开地图文档ToolStripMenuItem";
             this.打开地图文档ToolStripMenuItem.Size = new System.Drawing.Size(288, 42);
-            this.打开地图文档ToolStripMenuItem.Text = "打开地图文档";
-            this.打开地图文档ToolStripMenuItem.Click += new System.EventHandler(this.openMapDocumentMenuItem_Click);
+            this.打开地图文档ToolStripMenuItem.Text = "打开Mxd文档";
+            this.打开地图文档ToolStripMenuItem.Click += new System.EventHandler(this.openMxdDocMenuItem_Click);
             // 
             // 另存地图文档ToolStripMenuItem
             // 
             this.另存地图文档ToolStripMenuItem.Name = "另存地图文档ToolStripMenuItem";
             this.另存地图文档ToolStripMenuItem.Size = new System.Drawing.Size(288, 42);
-            this.另存地图文档ToolStripMenuItem.Text = "另存地图文档";
-            this.另存地图文档ToolStripMenuItem.Click += new System.EventHandler(this.saveMapDocumentMenuItem_Click);
+            this.另存地图文档ToolStripMenuItem.Text = "另存Mxd文档";
+            this.另存地图文档ToolStripMenuItem.Click += new System.EventHandler(this.saveAsMxdDocMenuItem_Click);
+            // 
+            // 新建Mxd文档ToolStripMenuItem
+            // 
+            this.新建Mxd文档ToolStripMenuItem.Name = "新建Mxd文档ToolStripMenuItem";
+            this.新建Mxd文档ToolStripMenuItem.Size = new System.Drawing.Size(288, 42);
+            this.新建Mxd文档ToolStripMenuItem.Text = "新建Mxd文档";
+            this.新建Mxd文档ToolStripMenuItem.Click += new System.EventHandler(this.newMxdDocMenuItem_Click);
+            // 
+            // 保存Mxd文档ToolStripMenuItem
+            // 
+            this.保存Mxd文档ToolStripMenuItem.Name = "保存Mxd文档ToolStripMenuItem";
+            this.保存Mxd文档ToolStripMenuItem.Size = new System.Drawing.Size(288, 42);
+            this.保存Mxd文档ToolStripMenuItem.Text = "保存Mxd文档";
+            this.保存Mxd文档ToolStripMenuItem.Click += new System.EventHandler(this.saveMxdDocMenuItem_Click);
             // 
             // 导出地图为图片ToolStripMenuItem
             // 
@@ -516,6 +534,7 @@ namespace MyMap
             // 测距ToolStripMenuItem
             // 
             this.测距ToolStripMenuItem.Name = "测距ToolStripMenuItem";
+            this.测距ToolStripMenuItem.CheckOnClick = true;
             this.测距ToolStripMenuItem.Size = new System.Drawing.Size(216, 42);
             this.测距ToolStripMenuItem.Text = "测距";
             this.测距ToolStripMenuItem.Click += new System.EventHandler(this.measureDistanceMenuItem_Click);
@@ -523,6 +542,7 @@ namespace MyMap
             // 测面积ToolStripMenuItem
             // 
             this.测面积ToolStripMenuItem.Name = "测面积ToolStripMenuItem";
+            this.测面积ToolStripMenuItem.CheckOnClick = true;
             this.测面积ToolStripMenuItem.Size = new System.Drawing.Size(216, 42);
             this.测面积ToolStripMenuItem.Text = "测面积";
             this.测面积ToolStripMenuItem.Click += new System.EventHandler(this.measureAreaMenuItem_Click);
@@ -677,6 +697,7 @@ namespace MyMap
             // 框选查询ToolStripMenuItem
             //
             this.框选查询ToolStripMenuItem.Name = "框选查询ToolStripMenuItem";
+            this.框选查询ToolStripMenuItem.CheckOnClick = true;
             this.框选查询ToolStripMenuItem.Size = new System.Drawing.Size(288, 42);
             this.框选查询ToolStripMenuItem.Text = "框选查询";
             this.框选查询ToolStripMenuItem.Click += new System.EventHandler(this.rectangleSelectMenuItem_Click);
@@ -684,6 +705,7 @@ namespace MyMap
             // 圈选查询ToolStripMenuItem
             //
             this.圈选查询ToolStripMenuItem.Name = "圈选查询ToolStripMenuItem";
+            this.圈选查询ToolStripMenuItem.CheckOnClick = true;
             this.圈选查询ToolStripMenuItem.Size = new System.Drawing.Size(288, 42);
             this.圈选查询ToolStripMenuItem.Text = "圈选查询";
             this.圈选查询ToolStripMenuItem.Click += new System.EventHandler(this.polygonSelectMenuItem_Click);
@@ -833,7 +855,9 @@ namespace MyMap
         private System.Windows.Forms.ToolStripMenuItem 添加图层ToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem addshplayerToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem 添加栅格图层ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem 新建Mxd文档ToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem 打开地图文档ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem 保存Mxd文档ToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem 另存地图文档ToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem 导出地图为图片ToolStripMenuItem;
         private System.Windows.Forms.OpenFileDialog openFileDialog1;

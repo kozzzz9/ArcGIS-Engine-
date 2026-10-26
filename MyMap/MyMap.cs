@@ -38,6 +38,28 @@ namespace MyMap
         /// <summary>鹰眼图控件（运行时创建到“鹰眼”页签的面板中）。</summary>
         private AxMapControl _overviewMapControl;
 
+        /// <summary>Mxd 地图文档操作类实例（实习十二：自定义类封装文档操作）。</summary>
+        private readonly MyMxdDocClass _mxdDoc = new MyMxdDocClass();
+
+        /// <summary>当前地图交互动作模式。</summary>
+        private MapAction _pendingAction = MapAction.None;
+
+        /// <summary>是否正在橡皮带交互中（防止 TrackNew 期间事件重入）。</summary>
+        private bool _actionRunning;
+
+        /// <summary>当前测量结果图形（结果对话框关闭后自动移除）。</summary>
+        private IElement _measureElement;
+
+        /// <summary>地图交互动作模式。</summary>
+        private enum MapAction
+        {
+            None,
+            MeasureDistance,
+            MeasureArea,
+            RectangleSelect,
+            PolygonSelect
+        }
+
         #endregion
 
         #region 构造函数与窗体加载
@@ -547,20 +569,9 @@ namespace MyMap
         /// </summary>
         private void measureDistanceMenuItem_Click(object sender, EventArgs e)
         {
-            IActiveView activeView = (IActiveView)axMapControl1.ActiveView;
-            IRubberBand rubberBand = new RubberLine();
-            IGeometry geometry = rubberBand.TrackNew(activeView.ScreenDisplay, null);
-            if (geometry == null)
-            {
-                return;
-            }
-
-            ICurve curve = (ICurve)geometry;
-            MessageBox.Show(
-                string.Format("测量的线段长度：{0:F2} {1}", curve.Length, GetMapUnitName()),
-                "测距",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
+            // 只设定动作模式，起点由用户在地图上第一次单击确定
+            SetMapAction(MapAction.MeasureDistance, (ToolStripMenuItem)sender,
+                "测距：在地图上按下左键并拖动画线，松开后显示距离");
         }
 
         /// <summary>
@@ -568,20 +579,93 @@ namespace MyMap
         /// </summary>
         private void measureAreaMenuItem_Click(object sender, EventArgs e)
         {
-            IActiveView activeView = (IActiveView)axMapControl1.ActiveView;
-            IRubberBand rubberBand = new RubberPolygon();
-            IGeometry geometry = rubberBand.TrackNew(activeView.ScreenDisplay, null);
-            if (geometry == null)
+            SetMapAction(MapAction.MeasureArea, (ToolStripMenuItem)sender,
+                "测面积：在地图上依次单击各顶点，双击结束");
+        }
+
+        /// <summary>
+        /// 创建测距与框选拖动时显示的红色实线符号。
+        /// </summary>
+        private static ISymbol CreateMeasureLineSymbol()
+        {
+            ISimpleLineSymbol lineSymbol = new SimpleLineSymbol();
+            lineSymbol.Style = esriSimpleLineStyle.esriSLSSolid;
+            lineSymbol.Width = 2;
+            IRgbColor red = new RgbColor();
+            red.Red = 255;
+            lineSymbol.Color = red;
+            return (ISymbol)lineSymbol;
+        }
+
+        /// <summary>
+        /// 创建测面积与圈选拖动时显示的红色空心面符号（只显示轮廓）。
+        /// </summary>
+        private static ISymbol CreateMeasureFillSymbol()
+        {
+            ISimpleLineSymbol outline = new SimpleLineSymbol();
+            outline.Style = esriSimpleLineStyle.esriSLSSolid;
+            outline.Width = 2;
+            IRgbColor red = new RgbColor();
+            red.Red = 255;
+            outline.Color = red;
+
+            ISimpleFillSymbol fillSymbol = new SimpleFillSymbol();
+            fillSymbol.Style = esriSimpleFillStyle.esriSFSHollow;
+            fillSymbol.Outline = outline;
+            return (ISymbol)fillSymbol;
+        }
+
+        /// <summary>
+        /// 把测量结果以图形元素绘制到地图上（可用“清除分析结果”清除）。
+        /// </summary>
+        /// <param name="geometry">测量得到的线或面几何。</param>
+        /// <param name="symbol">显示符号。</param>
+        private void DrawMeasureGeometry(IGeometry geometry, ISymbol symbol)
+        {
+            IGraphicsContainer container = (IGraphicsContainer)axMapControl1.Map;
+
+            IElement element = null;
+
+            if (geometry is IPolyline)
+            {
+                ILineElement lineElement = (ILineElement)new LineElement();
+                ((ILineElement)lineElement).Symbol = (ILineSymbol)symbol;
+                element = (IElement)lineElement;
+            }
+            else if (geometry is IPolygon)
+            {
+                element = (IElement)new PolygonElement();
+                ((IFillShapeElement)element).Symbol = (IFillSymbol)symbol;
+            }
+
+            if (element == null)
             {
                 return;
             }
 
-            IArea area = (IArea)geometry;
-            MessageBox.Show(
-                string.Format("测量的多边形面积：{0:F2} 平方{1}", area.Area, GetMapUnitName()),
-                "测面积",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
+            element.Geometry = geometry;
+
+            // 同一时间只保留最新一条测量图形
+            RemoveMeasureGraphic();
+            container.AddElement(element, 0);
+            _measureElement = element;
+            axMapControl1.ActiveView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
+        }
+
+        /// <summary>
+        /// 移除当前测量结果图形（测量结果对话框关闭后自动调用）。
+        /// </summary>
+        private void RemoveMeasureGraphic()
+        {
+            if (_measureElement == null)
+            {
+                return;
+            }
+
+            IGraphicsContainer container = (IGraphicsContainer)axMapControl1.Map;
+            container.DeleteElement(_measureElement);
+            _measureElement = null;
+            axMapControl1.ActiveView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
         }
 
         /// <summary>
@@ -713,68 +797,39 @@ namespace MyMap
         #region 扩展功能：地图文档与导出
 
         /// <summary>
-        /// 打开地图文档（.mxd 等）并加载到地图控件。
+        /// 新建Mxd文档菜单：调用地图文档操作类新建空白文档并加载。
         /// </summary>
-        private void openMapDocumentMenuItem_Click(object sender, EventArgs e)
+        private void newMxdDocMenuItem_Click(object sender, EventArgs e)
         {
-            using (OpenFileDialog dialog = new OpenFileDialog())
-            {
-                dialog.Title = "打开地图文档";
-                dialog.Filter = "地图文档(*.mxd;*.mxt;*.pmf)|*.mxd;*.mxt;*.pmf";
-                if (dialog.ShowDialog(this) != DialogResult.OK)
-                {
-                    return;
-                }
-
-                try
-                {
-                    axMapControl1.LoadMxFile(dialog.FileName, null, null);
-                    axMapControl1.ActiveView.Refresh();
-                    UpdateStatusBar();
-                    SyncOverview();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("打开地图文档失败：" + ex.Message);
-                }
-            }
+            _mxdDoc.newMapDoc(axMapControl1);
+            UpdateStatusBar();
+            SyncOverview();
         }
 
         /// <summary>
-        /// 将当前地图另存为地图文档（.mxd）。
+        /// 打开Mxd文档菜单：调用地图文档操作类打开文档并加载到地图控件。
         /// </summary>
-        private void saveMapDocumentMenuItem_Click(object sender, EventArgs e)
+        private void openMxdDocMenuItem_Click(object sender, EventArgs e)
         {
-            if (axMapControl1.Map.LayerCount == 0)
-            {
-                MessageBox.Show("当前地图没有可保存的图层！");
-                return;
-            }
+            _mxdDoc.openMapDoc(axMapControl1);
+            UpdateStatusBar();
+            SyncOverview();
+        }
 
-            using (SaveFileDialog dialog = new SaveFileDialog())
-            {
-                dialog.Title = "另存地图文档";
-                dialog.Filter = "地图文档(*.mxd)|*.mxd";
-                dialog.OverwritePrompt = true;
-                if (dialog.ShowDialog(this) != DialogResult.OK)
-                {
-                    return;
-                }
+        /// <summary>
+        /// 保存Mxd文档菜单：调用地图文档操作类保存当前文档。
+        /// </summary>
+        private void saveMxdDocMenuItem_Click(object sender, EventArgs e)
+        {
+            _mxdDoc.saveMapDoc(axMapControl1);
+        }
 
-                IMapDocument mapDocument = new MapDocument();
-                try
-                {
-                    mapDocument.New(dialog.FileName);
-                    mapDocument.ReplaceContents(axMapControl1.Map as IMxdContents);
-                    mapDocument.Save(true, false);
-                    mapDocument.Close();
-                    MessageBox.Show("地图文档保存成功！");
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("保存地图文档失败：" + ex.Message);
-                }
-            }
+        /// <summary>
+        /// 另存Mxd文档菜单：调用地图文档操作类把当前地图另存为新文档。
+        /// </summary>
+        private void saveAsMxdDocMenuItem_Click(object sender, EventArgs e)
+        {
+            _mxdDoc.SaveAsMapDoc(axMapControl1);
         }
 
         /// <summary>
@@ -1263,6 +1318,7 @@ namespace MyMap
             object targetMap = axPageLayoutControl1.ActiveView.FocusMap;
             objectCopy.Overwrite(sourceMap, ref targetMap);
             axPageLayoutControl1.ActiveView.Refresh();
+            axPageLayoutControl1.ActiveView.ScreenDisplay.UpdateWindow();
         }
 
         #endregion
@@ -1396,6 +1452,133 @@ namespace MyMap
 
         #endregion
 
+        #region 扩展功能：地图交互模式（测距/测面积/框选/圈选）
+
+        /// <summary>
+        /// 设定地图动作模式并互斥勾选菜单项；再次点击同一菜单项可取消。
+        /// </summary>
+        /// <param name="action">要设定的动作模式。</param>
+        /// <param name="menuItem">触发本次设定的菜单项。</param>
+        /// <param name="hint">操作提示文本。</param>
+        private void SetMapAction(MapAction action, ToolStripMenuItem menuItem, string hint)
+        {
+            // CheckOnClick 已先行翻转勾选状态：勾上表示开启模式，勾掉表示取消
+            bool turningOn = menuItem.Checked;
+            ResetMapAction();
+
+            if (!turningOn)
+            {
+                // 再次点击已勾选的菜单项表示取消模式
+                UpdateStatusBar();
+                return;
+            }
+
+            menuItem.Checked = true;
+            _pendingAction = action;
+            statusStripInfoLabel.Text = hint;
+        }
+
+        /// <summary>
+        /// 取消当前动作模式。
+        /// </summary>
+        private void ResetMapAction()
+        {
+            _pendingAction = MapAction.None;
+            _actionRunning = false;
+
+            测距ToolStripMenuItem.Checked = false;
+            测面积ToolStripMenuItem.Checked = false;
+            框选查询ToolStripMenuItem.Checked = false;
+            圈选查询ToolStripMenuItem.Checked = false;
+        }
+
+        /// <summary>
+        /// 动作模式下在地图上按下左键：用橡皮带完成测量或选择。
+        /// 起点就是用户按下鼠标的位置，拖动过程中橡皮带实时显示，
+        /// TrackNew 自行处理绘制与擦除，松开（或双击）后返回几何。
+        /// </summary>
+        private void RunMapAction()
+        {
+            IActiveView activeView = (IActiveView)axMapControl1.ActiveView;
+            IRubberBand rubberBand;
+            IGeometry geometry = null;
+
+            switch (_pendingAction)
+            {
+                case MapAction.RectangleSelect:
+                    rubberBand = new RubberEnvelope();
+                    geometry = rubberBand.TrackNew(activeView.ScreenDisplay, CreateMeasureLineSymbol());
+                    break;
+                case MapAction.PolygonSelect:
+                    rubberBand = new RubberPolygon();
+                    geometry = rubberBand.TrackNew(activeView.ScreenDisplay, CreateMeasureFillSymbol());
+                    break;
+                case MapAction.MeasureArea:
+                    rubberBand = new RubberPolygon();
+                    geometry = rubberBand.TrackNew(activeView.ScreenDisplay, CreateMeasureFillSymbol());
+                    break;
+                case MapAction.MeasureDistance:
+                    rubberBand = new RubberLine();
+                    geometry = rubberBand.TrackNew(activeView.ScreenDisplay, CreateMeasureLineSymbol());
+                    break;
+                default:
+                    return;
+            }
+
+            if (geometry == null || geometry.IsEmpty)
+            {
+                return;
+            }
+
+            switch (_pendingAction)
+            {
+                case MapAction.RectangleSelect:
+                    {
+                        int count = SelectFeaturesByGeometry(geometry);
+                        UpdateStatusBar();
+                        statusStripInfoLabel.Text = string.Format("框选查询完成，选中 {0} 个要素。", count);
+                    }
+                    break;
+                case MapAction.PolygonSelect:
+                    {
+                        int count = SelectFeaturesByGeometry(geometry);
+                        UpdateStatusBar();
+                        statusStripInfoLabel.Text = string.Format("圈选查询完成，选中 {0} 个要素。", count);
+                    }
+                    break;
+                case MapAction.MeasureArea:
+                    {
+                        IArea area = (IArea)geometry;
+
+                        // 结果对话框期间显示测量图形，点确定后自动清除
+                        DrawMeasureGeometry(geometry, CreateMeasureFillSymbol());
+                        MessageBox.Show(
+                            string.Format("测量的多边形面积：{0:F2} 平方{1}", area.Area, GetMapUnitName()),
+                            "测面积",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Information);
+                        RemoveMeasureGraphic();
+                    }
+                    break;
+                case MapAction.MeasureDistance:
+                    {
+                        ICurve curve = (ICurve)geometry;
+
+                        // 结果对话框期间显示测量图形，点确定后自动清除
+                        DrawMeasureGeometry(geometry, CreateMeasureLineSymbol());
+                        MessageBox.Show(
+                            string.Format("测量的线段长度：{0:F2} {1}", curve.Length, GetMapUnitName()),
+                            "测距",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Information);
+                        RemoveMeasureGraphic();
+                    }
+                    break;
+            }
+        }
+
+        #endregion
+
         #region 扩展功能：地图事件与状态栏刷新
 
         /// <summary>
@@ -1412,6 +1595,21 @@ namespace MyMap
         /// </summary>
         private void axMapControl1_OnMouseDown(object sender, IMapControlEvents2_OnMouseDownEvent e)
         {
+            // 动作模式下：在地图上按下左键开始橡皮带交互，起点即按下位置
+            if (_pendingAction != MapAction.None && !_actionRunning && e.button == 1)
+            {
+                _actionRunning = true;
+                try
+                {
+                    RunMapAction();
+                }
+                finally
+                {
+                    _actionRunning = false;
+                }
+                return;
+            }
+
             if (!点选查询ToolStripMenuItem.Checked)
             {
                 return;
@@ -1462,23 +1660,8 @@ namespace MyMap
         /// </summary>
         private void rectangleSelectMenuItem_Click(object sender, EventArgs e)
         {
-            if (axMapControl1.Map.LayerCount == 0)
-            {
-                MessageBox.Show("请先添加矢量图层！");
-                return;
-            }
-
-            IActiveView activeView = (IActiveView)axMapControl1.ActiveView;
-            IRubberBand rubberBand = new RubberEnvelope();
-            IGeometry geometry = rubberBand.TrackNew(activeView.ScreenDisplay, null);
-            if (geometry == null)
-            {
-                return;
-            }
-
-            int count = SelectFeaturesByGeometry(geometry);
-            UpdateStatusBar();
-            statusStripInfoLabel.Text = string.Format("框选查询完成，选中 {0} 个要素。", count);
+            SetMapAction(MapAction.RectangleSelect, (ToolStripMenuItem)sender,
+                "框选查询：在地图上按下左键拖出矩形，松开完成选择");
         }
 
         /// <summary>
@@ -1486,23 +1669,8 @@ namespace MyMap
         /// </summary>
         private void polygonSelectMenuItem_Click(object sender, EventArgs e)
         {
-            if (axMapControl1.Map.LayerCount == 0)
-            {
-                MessageBox.Show("请先添加矢量图层！");
-                return;
-            }
-
-            IActiveView activeView = (IActiveView)axMapControl1.ActiveView;
-            IRubberBand rubberBand = new RubberPolygon();
-            IGeometry geometry = rubberBand.TrackNew(activeView.ScreenDisplay, null);
-            if (geometry == null)
-            {
-                return;
-            }
-
-            int count = SelectFeaturesByGeometry(geometry);
-            UpdateStatusBar();
-            statusStripInfoLabel.Text = string.Format("圈选查询完成，选中 {0} 个要素。", count);
+            SetMapAction(MapAction.PolygonSelect, (ToolStripMenuItem)sender,
+                "圈选查询：在地图上依次单击各顶点，双击结束");
         }
 
         /// <summary>
@@ -1814,6 +1982,7 @@ namespace MyMap
         {
             IGraphicsContainer container = (IGraphicsContainer)axMapControl1.Map;
             container.DeleteAllElements();
+            _measureElement = null;
             axMapControl1.ActiveView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
             statusStripInfoLabel.Text = "已清除分析结果。";
         }
