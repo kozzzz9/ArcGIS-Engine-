@@ -1,2 +1,1 @@
-E:\ArcGIS-Engine-\MyMap\World\World.mxd
-E:\ArcObjectsSampleData\data\AirportsAndGolf\airportgolf.mxd
+E:\ArcObjectsSampleData\data\California\California.mxd

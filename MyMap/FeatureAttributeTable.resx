@@ -117,4 +117,28 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <assembly alias="System.Drawing" name="System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+  <data name="$this.Icon" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        AAABAAEAICAAAAEAIAA0BAAAFgAAAIlQTkcNChoKAAAADUlIRFIAAAAgAAAAIAgGAAAAc3p69AAAA+lJ
+        REFUeAGsl1fIVEcUx9cUEkhCkoeEkEoKJC/pCaQ3SKKiiNgQQRQrFlRURMGGir1gQVEsoIhieRBBfVIR
+        FQsq9t7F8mAXX2y/33rv9113Z2evHy7//5wzZ87MPTt3yrnPFer2e59u4+A1eBWOge/Cp8bTBvADT1gC
+        T8H+8A34JhwAz8DF8FuYG3kCeJ7RWsKtcAdsBV+ApdDWGuMuuAk2hVXHjzm8zgD+y5PIpfAnmBe/4bgS
+        HoO94KswiFAAn+A5DV6AvucPkXWFY02h83k4Abp2ELXIBlAP8yB4FPaAr8BnBWezL4Odhs6mawm1UMgG
+        MBjLKOg7R1TFTjxmwtlQHVEVju16ci0VnbMBNCla4sUqml3l9ZA/wm6wC1TXZttq6rmRDeC7SK9btHWA
+        BnkE2Q6ugxugW68jUuyhaAyt30ZWRTaASs7HafgSzoMOfAU5H/4H/4RuvTnIBjDFXBT72Be1MvIE0Ibu
+        HjI+zAdV2lKb8cvCBdc2awjp1QIYQaftUGykuAwrYXygwcNrdMBeY4oFsB+vITCFWynm3xnHf2Ep3NoH
+        So1pPTbgjNQJ6UWzG/kWLIXnhv9yOA0HYQizQkZtsQAO65DQ1f9xomeFi/FzDP7LYUhPT0QZ3DllRg15
+        AngbxxYwhD4hY2K7iRwLxSGLEGMBXEo6rEf+DUN4KWRMbC8i3UGIgneBsoyxALxI7OAlclYlwOXYnHrP
+        BNQaDEV7GZ6A4lOLEGMBfJN08D1/ge61egOZxe9UfNhAZAoDNyjray3g9zCIPAHY8S7FVOj1jChD9jJq
+        lGldlOjpn0mqtSIWQHvcSk+9hthiMGkZmTi49c6hvwYdC1GOWAAmD+kqtqfv8VeVAH/G5k24BukDzYTM
+        pqgWJlK8A4OIBWAHr9v0oXcwuCMQZdDHXNAkdR+t/0Bvwz+QnWBFVAvAjgsoPITclg7sBePDMD8Bc4Xm
+        WL6Cbjv72JdqZeQJ4DO674VdoVhI4ao2Afka3WtX3dNyBXXRncJj2SBQy7AttaQBOEBqC0kXo+mX7zj7
+        Pg3MSyvt453ha5qOwXMAEYTJTLEhDeAhNd/jMmQM9Wm8CD1g3OOT0c2gHdD03bvgL2wxuCj9kir6pAFY
+        2UJhwvgBchL0LEcE4WHzPy29oRm0J2Gl6cal4IJ0VtxJ/TB4riAKT2TFRQOFC8gU+j10Lxs/w1DrBI9w
+        t6NbuicjOEuIWmRnoNb6WDNqPypchM0wlaZcmCrCTMjZdKa8S0qP8JqOsQBSpwcofmb5uWX67cfpPWyl
+        0GabPr/Q6Hq6j4wiTwDZATzzzYI/wui9cB3pJ7q6Ntv0wfwY1cpHAAAA///7Xy7mAAAABklEQVQDAMSL
+        o2Rt2Kw1AAAAAElFTkSuQmCC
+</value>
+  </data>
 </root>

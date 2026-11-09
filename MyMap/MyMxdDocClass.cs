@@ -9,9 +9,8 @@ namespace MyMap
 {
     /// <summary>
     /// Mxd 地图文档操作类。
-    /// 按实习十二扩展内容要求，使用非静态类封装非静态方法，
+    /// 使用非静态类封装非静态方法，
     /// 实现地图文档的新建、打开、保存与另存为功能。
-    /// 使用时先创建本类实例（如主窗体中的 _mxdDoc 字段），再调用相应方法。
     /// </summary>
     public class MyMxdDocClass
     {
@@ -84,10 +83,11 @@ namespace MyMap
         }
 
         /// <summary>
-        /// 打开地图文档：校验后加载到地图控件（mxd 含多个数据框时加载第一个）。
+        /// 打开地图文档：弹出文件对话框，加载到地图控件（mxd 含多个数据框时加载第一个）。
         /// </summary>
         /// <param name="axMapControl">目标地图控件。</param>
-        public void openMapDoc(AxMapControl axMapControl)
+        /// <returns>打开的文档路径；取消或失败时返回 null。</returns>
+        public string openMapDoc(AxMapControl axMapControl)
         {
             OpenFileDialog openFileDialog = new OpenFileDialog();
             openFileDialog.Title = "打开地图文档";
@@ -96,27 +96,38 @@ namespace MyMap
 
             if (dialogResult != DialogResult.OK)
             {
-                return;
+                return null;
             }
 
+            return openMapDocByPath(axMapControl, openFileDialog.FileName);
+        }
+
+        /// <summary>
+        /// 打开指定路径的地图文档并加载到地图控件（供最近文档菜单直接调用）。
+        /// </summary>
+        /// <param name="axMapControl">目标地图控件。</param>
+        /// <param name="fileName">文档路径。</param>
+        /// <returns>打开的文档路径；失败时返回 null。</returns>
+        public string openMapDocByPath(AxMapControl axMapControl, string fileName)
+        {
             // 打开地图文档，并加载到 MapControl 控件
-            if (MapDocumentInstance.get_IsMapDocument(openFileDialog.FileName))
-            {
-                CloseQuietly();
-                MapDocumentInstance.Open(openFileDialog.FileName);
-
-                // 用控件自带的 LoadMxFile 完成实际加载：由控件自行初始化
-                // 渲染缓存，避免直接把文档地图对象赋给控件后部分图层
-                //（如海洋格网层）只绘制一部分的问题。文档对象保持打开，
-                // 供之后的保存操作使用。
-                axMapControl.LoadMxFile(openFileDialog.FileName, null, null);
-                axMapControl.ActiveView.Refresh();
-                axMapControl.ActiveView.ScreenDisplay.UpdateWindow();
-            }
-            else
+            if (!MapDocumentInstance.get_IsMapDocument(fileName))
             {
                 MessageBox.Show("所选文件不是有效的地图文档！");
+                return null;
             }
+
+            CloseQuietly();
+            MapDocumentInstance.Open(fileName);
+
+            // 用控件自带的 LoadMxFile 完成实际加载：由控件自行初始化
+            // 渲染缓存，避免直接把文档地图对象赋给控件后部分图层
+            //（如海洋格网层）只绘制一部分的问题。文档对象保持打开，
+            // 供之后的保存操作使用。
+            axMapControl.LoadMxFile(fileName, null, null);
+            axMapControl.ActiveView.Refresh();
+            axMapControl.ActiveView.ScreenDisplay.UpdateWindow();
+            return fileName;
         }
 
         /// <summary>
@@ -148,7 +159,8 @@ namespace MyMap
         /// 地图文档另存为：把控件当前地图保存为新的 Mxd 文档。
         /// </summary>
         /// <param name="axMapControl">目标地图控件。</param>
-        public void SaveAsMapDoc(AxMapControl axMapControl)
+        /// <returns>另存的文档路径；取消或失败时返回 null。</returns>
+        public string SaveAsMapDoc(AxMapControl axMapControl)
         {
             SaveFileDialog saveFileDialog = new SaveFileDialog();
             saveFileDialog.Title = "地图文档另存为";
@@ -158,19 +170,20 @@ namespace MyMap
 
             if (dialogResult != DialogResult.OK)
             {
-                return;
+                return null;
             }
 
             if (MapDocumentInstance.get_IsReadOnly(saveFileDialog.FileName))
             {
                 MessageBox.Show("目标文件只读！");
-                return;
+                return null;
             }
 
             // 把控件当前地图写入文档后另存，SaveAs 已把当前文档切换到新路径
             MapDocumentInstance.ReplaceContents(axMapControl.Map as IMxdContents);
             MapDocumentInstance.SaveAs(saveFileDialog.FileName, true, false);
             MessageBox.Show("保存成功！");
+            return saveFileDialog.FileName;
         }
     }
 }

@@ -28,33 +28,54 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.lblBookmarks = new System.Windows.Forms.Label();
+            this.tlpMain = new System.Windows.Forms.TableLayoutPanel();
             this.lstBookmarks = new System.Windows.Forms.ListBox();
+            this.flpButtons = new System.Windows.Forms.FlowLayoutPanel();
             this.btnGo = new System.Windows.Forms.Button();
             this.btnDelete = new System.Windows.Forms.Button();
             this.btnClose = new System.Windows.Forms.Button();
+            this.tlpMain.SuspendLayout();
+            this.flpButtons.SuspendLayout();
             this.SuspendLayout();
             //
-            // lblBookmarks
+            // tlpMain
             //
-            this.lblBookmarks.AutoSize = true;
-            this.lblBookmarks.Location = new System.Drawing.Point(15, 18);
-            this.lblBookmarks.Name = "lblBookmarks";
-            this.lblBookmarks.Size = new System.Drawing.Size(65, 12);
-            this.lblBookmarks.TabIndex = 0;
-            this.lblBookmarks.Text = "书签列表：";
+            this.tlpMain.ColumnCount = 2;
+            this.tlpMain.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tlpMain.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 116F));
+            this.tlpMain.Controls.Add(this.lstBookmarks, 0, 0);
+            this.tlpMain.Controls.Add(this.flpButtons, 1, 0);
+            this.tlpMain.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tlpMain.Location = new System.Drawing.Point(0, 0);
+            this.tlpMain.Name = "tlpMain";
+            this.tlpMain.Padding = new System.Windows.Forms.Padding(12, 14, 12, 10);
+            this.tlpMain.RowCount = 1;
+            this.tlpMain.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tlpMain.Size = new System.Drawing.Size(360, 300);
+            this.tlpMain.TabIndex = 0;
             //
             // lstBookmarks
             //
+            this.lstBookmarks.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lstBookmarks.ItemHeight = 12;
-            this.lstBookmarks.Location = new System.Drawing.Point(15, 45);
+            this.lstBookmarks.Location = new System.Drawing.Point(12, 14);
             this.lstBookmarks.Name = "lstBookmarks";
-            this.lstBookmarks.Size = new System.Drawing.Size(200, 208);
-            this.lstBookmarks.TabIndex = 1;
+            //
+            // flpButtons
+            //
+            this.flpButtons.Controls.Add(this.btnGo);
+            this.flpButtons.Controls.Add(this.btnDelete);
+            this.flpButtons.Controls.Add(this.btnClose);
+            this.flpButtons.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.flpButtons.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
+            this.flpButtons.Location = new System.Drawing.Point(234, 17);
+            this.flpButtons.Name = "flpButtons";
+            this.flpButtons.Size = new System.Drawing.Size(110, 269);
             //
             // btnGo
             //
-            this.btnGo.Location = new System.Drawing.Point(235, 45);
+            this.btnGo.Anchor = System.Windows.Forms.AnchorStyles.Left;
+            this.btnGo.Location = new System.Drawing.Point(3, 3);
             this.btnGo.Name = "btnGo";
             this.btnGo.Size = new System.Drawing.Size(100, 30);
             this.btnGo.TabIndex = 2;
@@ -64,7 +85,8 @@
             //
             // btnDelete
             //
-            this.btnDelete.Location = new System.Drawing.Point(235, 85);
+            this.btnDelete.Anchor = System.Windows.Forms.AnchorStyles.Left;
+            this.btnDelete.Location = new System.Drawing.Point(3, 39);
             this.btnDelete.Name = "btnDelete";
             this.btnDelete.Size = new System.Drawing.Size(100, 30);
             this.btnDelete.TabIndex = 3;
@@ -74,7 +96,8 @@
             //
             // btnClose
             //
-            this.btnClose.Location = new System.Drawing.Point(235, 225);
+            this.btnClose.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
+            this.btnClose.Location = new System.Drawing.Point(3, 236);
             this.btnClose.Name = "btnClose";
             this.btnClose.Size = new System.Drawing.Size(100, 30);
             this.btnClose.TabIndex = 4;
@@ -88,26 +111,24 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnClose;
             this.ClientSize = new System.Drawing.Size(360, 300);
-            this.Controls.Add(this.lblBookmarks);
-            this.Controls.Add(this.lstBookmarks);
-            this.Controls.Add(this.btnGo);
-            this.Controls.Add(this.btnDelete);
-            this.Controls.Add(this.btnClose);
+            this.Controls.Add(this.tlpMain);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "BookmarkDialog";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "书签管理";
+            this.tlpMain.ResumeLayout(false);
+            this.flpButtons.ResumeLayout(false);
             this.ResumeLayout(false);
-            this.PerformLayout();
 
         }
 
         #endregion
 
-        private System.Windows.Forms.Label lblBookmarks;
+        private System.Windows.Forms.TableLayoutPanel tlpMain;
         private System.Windows.Forms.ListBox lstBookmarks;
+        private System.Windows.Forms.FlowLayoutPanel flpButtons;
         private System.Windows.Forms.Button btnGo;
         private System.Windows.Forms.Button btnDelete;
         private System.Windows.Forms.Button btnClose;

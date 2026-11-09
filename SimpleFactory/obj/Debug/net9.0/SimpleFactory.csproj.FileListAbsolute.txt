@@ -1,0 +1,14 @@
+E:\gisarta\gis实习\17.实习五_工厂模式实习\SimpleFactory\bin\Debug\net9.0\SimpleFactory.exe
+E:\gisarta\gis实习\17.实习五_工厂模式实习\SimpleFactory\bin\Debug\net9.0\SimpleFactory.deps.json
+E:\gisarta\gis实习\17.实习五_工厂模式实习\SimpleFactory\bin\Debug\net9.0\SimpleFactory.runtimeconfig.json
+E:\gisarta\gis实习\17.实习五_工厂模式实习\SimpleFactory\bin\Debug\net9.0\SimpleFactory.dll
+E:\gisarta\gis实习\17.实习五_工厂模式实习\SimpleFactory\bin\Debug\net9.0\SimpleFactory.pdb
+E:\gisarta\gis实习\17.实习五_工厂模式实习\SimpleFactory\obj\Debug\net9.0\SimpleFactory.GeneratedMSBuildEditorConfig.editorconfig
+E:\gisarta\gis实习\17.实习五_工厂模式实习\SimpleFactory\obj\Debug\net9.0\SimpleFactory.AssemblyInfoInputs.cache
+E:\gisarta\gis实习\17.实习五_工厂模式实习\SimpleFactory\obj\Debug\net9.0\SimpleFactory.AssemblyInfo.cs
+E:\gisarta\gis实习\17.实习五_工厂模式实习\SimpleFactory\obj\Debug\net9.0\SimpleFactory.csproj.CoreCompileInputs.cache
+E:\gisarta\gis实习\17.实习五_工厂模式实习\SimpleFactory\obj\Debug\net9.0\SimpleFactory.dll
+E:\gisarta\gis实习\17.实习五_工厂模式实习\SimpleFactory\obj\Debug\net9.0\refint\SimpleFactory.dll
+E:\gisarta\gis实习\17.实习五_工厂模式实习\SimpleFactory\obj\Debug\net9.0\SimpleFactory.pdb
+E:\gisarta\gis实习\17.实习五_工厂模式实习\SimpleFactory\obj\Debug\net9.0\SimpleFactory.genruntimeconfig.cache
+E:\gisarta\gis实习\17.实习五_工厂模式实习\SimpleFactory\obj\Debug\net9.0\ref\SimpleFactory.dll

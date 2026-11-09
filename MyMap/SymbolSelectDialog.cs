@@ -37,7 +37,7 @@ namespace MyMap
         /// <summary>是否正在把符号参数回填到界面控件（防止回填触发修改事件）。</summary>
         private bool _updatingControls;
 
-        /// <summary>“更多符号”菜单是否已初始化（实习十四 1.2）。</summary>
+        /// <summary>“更多符号”菜单是否已初始化。</summary>
         private bool m_bContextMenuMoreSymbolInitiated = false;
 
         /// <summary>已加载到 SymbologyControl 的符号库文件路径（忽略大小写），用于同步菜单勾选状态。</summary>
@@ -370,7 +370,7 @@ namespace MyMap
         }
 
         /// <summary>
-        /// 打开 ArcMap 符号选择器（手册第一部分方式，需安装 ArcGIS Desktop）。
+        /// 打开 ArcMap 符号选择器（需安装 ArcGIS Desktop）。
         /// </summary>
         private void buttonArcMapSelector_Click(object sender, EventArgs e)
         {
@@ -583,7 +583,7 @@ namespace MyMap
                 m_bContextMenuMoreSymbolInitiated = true;
             }
 
-            // 手册示例的 Show(buttonMore.Location) 把窗体坐标当作屏幕坐标，
+            // 直接使用窗体坐标会把菜单弹到屏幕左上角，
             // 菜单会弹到屏幕左上角；这里改为在按钮正下方弹出
             contextMenuStripMoreSymbol.Show(buttonMore, new System.Drawing.Point(0, buttonMore.Height));
         }
@@ -607,7 +607,7 @@ namespace MyMap
 
             menuItems.Add(new ToolStripSeparator());
 
-            // 扩展：一键移除除 ESRI 外的所有符号库，恢复默认
+            // 一键移除除 ESRI 外的所有符号库，恢复默认
             ToolStripMenuItem resetItem = new ToolStripMenuItem("重置为默认符号库");
             resetItem.Name = "ResetDefaultStyles";
             resetItem.ToolTipText = "移除除 ESRI 之外所有已加载的符号库";
@@ -694,7 +694,7 @@ namespace MyMap
 
         /// <summary>
         /// “添加符号”：选择自定义 ServerStyle 文件载入，并把该文件加入
-        /// 菜单，使其同样可以随时勾选/取消（手册示例载入后无法再移除）。
+        /// 菜单，使其同样可以随时勾选/取消。
         /// </summary>
         private void AddCustomStyleFile()
         {

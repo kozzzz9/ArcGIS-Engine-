@@ -1,9 +1,0 @@
-E:\ArcGIS-Engine-\MyMap\bin\Debug\MyMap.exe.config
-E:\ArcGIS-Engine-\MyMap\bin\Debug\MyMap.exe
-E:\ArcGIS-Engine-\MyMap\bin\Debug\MyMap.pdb
-E:\ArcGIS-Engine-\MyMap\obj\Debug\MyMap.MyMap.resources
-E:\ArcGIS-Engine-\MyMap\obj\Debug\MyMap.Properties.Resources.resources
-E:\ArcGIS-Engine-\MyMap\obj\Debug\MyMap.csproj.GenerateResource.cache
-E:\ArcGIS-Engine-\MyMap\obj\Debug\MyMap.exe
-E:\ArcGIS-Engine-\MyMap\obj\Debug\MyMap.pdb
-E:\ArcGIS-Engine-\MyMap\obj\Debug\MyMap.csprojResolveAssemblyReference.cache

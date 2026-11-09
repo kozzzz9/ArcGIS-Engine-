@@ -6,7 +6,7 @@ using ESRI.ArcGIS.Geodatabase;
 namespace MyMap
 {
     /// <summary>
-    /// 查询字段选择对话框（实习十四）。
+    /// 查询字段选择对话框。
     /// 列出图层中可用于查询的属性字段，确定后由主窗体按该字段执行空间查询。
     /// </summary>
     public partial class FieldSelectDialog : Form
@@ -36,7 +36,7 @@ namespace MyMap
         #region 公共方法
 
         /// <summary>
-        /// 返回用户选择的查询字段名（手册要求的命名）。
+        /// 返回用户选择的查询字段名。
         /// </summary>
         public string selectFieldName()
         {

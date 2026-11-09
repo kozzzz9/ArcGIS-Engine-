@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "dgSpecHash": "P9UPNLciCWs=",
+  "success": true,
+  "projectFilePath": "E:\\gisarta\\gis实习\\19.实习七_观察者模式\\Observer\\Observer.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\17901\\.nuget\\packages\\nettopologysuite\\2.5.0\\nettopologysuite.2.5.0.nupkg.sha512",
+    "C:\\Users\\17901\\.nuget\\packages\\nettopologysuite.features\\2.1.0\\nettopologysuite.features.2.1.0.nupkg.sha512",
+    "C:\\Users\\17901\\.nuget\\packages\\system.memory\\4.5.4\\system.memory.4.5.4.nupkg.sha512"
+  ],
+  "logs": []
+}

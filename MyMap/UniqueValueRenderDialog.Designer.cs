@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.tlpMain = new System.Windows.Forms.TableLayoutPanel();
             this.lblField = new System.Windows.Forms.Label();
             this.cboField = new System.Windows.Forms.ComboBox();
             this.lblRamp = new System.Windows.Forms.Label();
@@ -39,70 +40,111 @@
             this.lblValues = new System.Windows.Forms.Label();
             this.lstValues = new System.Windows.Forms.ListBox();
             this.chkUseDefault = new System.Windows.Forms.CheckBox();
-            this.btnOk = new System.Windows.Forms.Button();
+            this.flpButtons = new System.Windows.Forms.FlowLayoutPanel();
             this.btnCancel = new System.Windows.Forms.Button();
+            this.btnOk = new System.Windows.Forms.Button();
+            this.tlpMain.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numColorCount)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.picRamp)).BeginInit();
+            this.flpButtons.SuspendLayout();
             this.SuspendLayout();
-            // 
+            //
+            // tlpMain
+            //
+            this.tlpMain.ColumnCount = 3;
+            this.tlpMain.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.AutoSize));
+            this.tlpMain.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tlpMain.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 150F));
+            this.tlpMain.Controls.Add(this.lblField, 0, 0);
+            this.tlpMain.Controls.Add(this.cboField, 1, 0);
+            this.tlpMain.Controls.Add(this.picRamp, 2, 0);
+            this.tlpMain.Controls.Add(this.lblRamp, 0, 1);
+            this.tlpMain.Controls.Add(this.cboRamp, 1, 1);
+            this.tlpMain.Controls.Add(this.lblColorCount, 0, 2);
+            this.tlpMain.Controls.Add(this.numColorCount, 1, 2);
+            this.tlpMain.Controls.Add(this.chkAutoColorCount, 1, 3);
+            this.tlpMain.Controls.Add(this.lblValues, 0, 4);
+            this.tlpMain.Controls.Add(this.lstValues, 1, 4);
+            this.tlpMain.Controls.Add(this.chkUseDefault, 0, 5);
+            this.tlpMain.Controls.Add(this.flpButtons, 0, 6);
+            this.tlpMain.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tlpMain.Location = new System.Drawing.Point(0, 0);
+            this.tlpMain.Name = "tlpMain";
+            this.tlpMain.Padding = new System.Windows.Forms.Padding(12, 16, 12, 10);
+            this.tlpMain.RowCount = 7;
+            this.tlpMain.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
+            this.tlpMain.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
+            this.tlpMain.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
+            this.tlpMain.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
+            this.tlpMain.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tlpMain.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
+            this.tlpMain.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
+            this.tlpMain.Size = new System.Drawing.Size(470, 400);
+            this.tlpMain.TabIndex = 0;
+            this.tlpMain.SetRowSpan(this.picRamp, 4);
+            //
             // lblField
-            // 
+            //
             this.lblField.AutoSize = true;
-            this.lblField.Location = new System.Drawing.Point(22, 30);
-            this.lblField.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblField.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblField.Location = new System.Drawing.Point(15, 19);
             this.lblField.Name = "lblField";
-            this.lblField.Size = new System.Drawing.Size(116, 18);
-            this.lblField.TabIndex = 0;
             this.lblField.Text = "唯一值字段：";
-            // 
+            this.lblField.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
             // cboField
-            // 
+            //
+            this.cboField.Dock = System.Windows.Forms.DockStyle.Fill;
             this.cboField.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cboField.Location = new System.Drawing.Point(165, 26);
-            this.cboField.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.cboField.Location = new System.Drawing.Point(103, 16);
             this.cboField.Name = "cboField";
-            this.cboField.Size = new System.Drawing.Size(298, 26);
-            this.cboField.TabIndex = 1;
             this.cboField.SelectedIndexChanged += new System.EventHandler(this.cboField_SelectedIndexChanged);
-            // 
+            //
+            // picRamp
+            //
+            this.picRamp.BackColor = System.Drawing.Color.White;
+            this.picRamp.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.picRamp.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.picRamp.Location = new System.Drawing.Point(318, 19);
+            this.picRamp.Name = "picRamp";
+            this.picRamp.TabStop = false;
+            this.picRamp.Paint += new System.Windows.Forms.PaintEventHandler(this.picRamp_Paint);
+            //
             // lblRamp
-            // 
+            //
             this.lblRamp.AutoSize = true;
-            this.lblRamp.Location = new System.Drawing.Point(22, 87);
-            this.lblRamp.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblRamp.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblRamp.Location = new System.Drawing.Point(15, 48);
             this.lblRamp.Name = "lblRamp";
-            this.lblRamp.Size = new System.Drawing.Size(98, 18);
-            this.lblRamp.TabIndex = 2;
             this.lblRamp.Text = "色带类型：";
-            // 
+            this.lblRamp.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
             // cboRamp
-            // 
+            //
+            this.cboRamp.Dock = System.Windows.Forms.DockStyle.Fill;
             this.cboRamp.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cboRamp.Items.AddRange(new object[] {
             "随机色带",
             "渐变色带",
             "单色渐变"});
-            this.cboRamp.Location = new System.Drawing.Point(165, 82);
-            this.cboRamp.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.cboRamp.Location = new System.Drawing.Point(103, 45);
             this.cboRamp.Name = "cboRamp";
-            this.cboRamp.Size = new System.Drawing.Size(298, 26);
-            this.cboRamp.TabIndex = 3;
+            this.cboRamp.SelectedIndex = 0;
             this.cboRamp.SelectedIndexChanged += new System.EventHandler(this.colorSettingChanged);
-            // 
+            //
             // lblColorCount
-            // 
+            //
             this.lblColorCount.AutoSize = true;
-            this.lblColorCount.Location = new System.Drawing.Point(22, 144);
-            this.lblColorCount.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblColorCount.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblColorCount.Location = new System.Drawing.Point(15, 77);
             this.lblColorCount.Name = "lblColorCount";
-            this.lblColorCount.Size = new System.Drawing.Size(98, 18);
-            this.lblColorCount.TabIndex = 4;
             this.lblColorCount.Text = "颜色数量：";
-            // 
+            this.lblColorCount.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
             // numColorCount
-            // 
-            this.numColorCount.Location = new System.Drawing.Point(165, 140);
-            this.numColorCount.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            //
+            this.numColorCount.Dock = System.Windows.Forms.DockStyle.Left;
+            this.numColorCount.Location = new System.Drawing.Point(103, 74);
             this.numColorCount.Maximum = new decimal(new int[] {
             20,
             0,
@@ -114,7 +156,7 @@
             0,
             0});
             this.numColorCount.Name = "numColorCount";
-            this.numColorCount.Size = new System.Drawing.Size(105, 28);
+            this.numColorCount.Size = new System.Drawing.Size(80, 21);
             this.numColorCount.TabIndex = 5;
             this.numColorCount.Value = new decimal(new int[] {
             5,
@@ -122,123 +164,101 @@
             0,
             0});
             this.numColorCount.ValueChanged += new System.EventHandler(this.colorSettingChanged);
-            // 
+            //
             // chkAutoColorCount
-            // 
+            //
             this.chkAutoColorCount.AutoSize = true;
             this.chkAutoColorCount.Checked = true;
             this.chkAutoColorCount.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkAutoColorCount.Location = new System.Drawing.Point(292, 144);
-            this.chkAutoColorCount.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.chkAutoColorCount.Location = new System.Drawing.Point(103, 101);
             this.chkAutoColorCount.Name = "chkAutoColorCount";
-            this.chkAutoColorCount.Size = new System.Drawing.Size(178, 22);
-            this.chkAutoColorCount.TabIndex = 6;
-            this.chkAutoColorCount.Text = "数量与唯一值一致";
+            this.chkAutoColorCount.Text = "颜色数量与唯一值数量一致";
             this.chkAutoColorCount.CheckedChanged += new System.EventHandler(this.chkAutoColorCount_CheckedChanged);
-            // 
-            // picRamp
-            // 
-            this.picRamp.BackColor = System.Drawing.Color.White;
-            this.picRamp.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.picRamp.Location = new System.Drawing.Point(480, 82);
-            this.picRamp.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
-            this.picRamp.Name = "picRamp";
-            this.picRamp.Size = new System.Drawing.Size(194, 89);
-            this.picRamp.TabIndex = 7;
-            this.picRamp.TabStop = false;
-            this.picRamp.Paint += new System.Windows.Forms.PaintEventHandler(this.picRamp_Paint);
-            // 
+            //
             // lblValues
-            // 
+            //
             this.lblValues.AutoSize = true;
-            this.lblValues.Location = new System.Drawing.Point(22, 210);
-            this.lblValues.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblValues.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblValues.Location = new System.Drawing.Point(15, 125);
             this.lblValues.Name = "lblValues";
-            this.lblValues.Size = new System.Drawing.Size(80, 18);
-            this.lblValues.TabIndex = 8;
             this.lblValues.Text = "唯一值：";
-            // 
+            this.lblValues.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            //
             // lstValues
-            // 
-            this.lstValues.ItemHeight = 18;
-            this.lstValues.Location = new System.Drawing.Point(165, 206);
-            this.lstValues.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            //
+            this.tlpMain.SetColumnSpan(this.lstValues, 2);
+            this.lstValues.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lstValues.Location = new System.Drawing.Point(103, 122);
             this.lstValues.Name = "lstValues";
             this.lstValues.SelectionMode = System.Windows.Forms.SelectionMode.MultiExtended;
-            this.lstValues.Size = new System.Drawing.Size(508, 256);
-            this.lstValues.TabIndex = 9;
-            // 
+            //
             // chkUseDefault
-            // 
+            //
+            this.tlpMain.SetColumnSpan(this.chkUseDefault, 3);
             this.chkUseDefault.AutoSize = true;
             this.chkUseDefault.Checked = true;
             this.chkUseDefault.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkUseDefault.Location = new System.Drawing.Point(165, 488);
-            this.chkUseDefault.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.chkUseDefault.Location = new System.Drawing.Point(15, 337);
             this.chkUseDefault.Name = "chkUseDefault";
-            this.chkUseDefault.Size = new System.Drawing.Size(232, 22);
-            this.chkUseDefault.TabIndex = 10;
             this.chkUseDefault.Text = "使用默认符号渲染其它值";
-            // 
-            // btnOk
-            // 
-            this.btnOk.Location = new System.Drawing.Point(398, 532);
-            this.btnOk.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
-            this.btnOk.Name = "btnOk";
-            this.btnOk.Size = new System.Drawing.Size(128, 42);
-            this.btnOk.TabIndex = 11;
-            this.btnOk.Text = "确定";
-            this.btnOk.UseVisualStyleBackColor = true;
-            this.btnOk.Click += new System.EventHandler(this.btnOk_Click);
-            // 
+            //
+            // flpButtons
+            //
+            this.tlpMain.SetColumnSpan(this.flpButtons, 3);
+            this.flpButtons.Controls.Add(this.btnCancel);
+            this.flpButtons.Controls.Add(this.btnOk);
+            this.flpButtons.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.flpButtons.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
+            this.flpButtons.Location = new System.Drawing.Point(15, 355);
+            this.flpButtons.Name = "flpButtons";
+            this.flpButtons.Size = new System.Drawing.Size(443, 32);
+            //
             // btnCancel
-            // 
-            this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.btnCancel.Location = new System.Drawing.Point(540, 532);
-            this.btnCancel.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            //
+            this.btnCancel.Location = new System.Drawing.Point(355, 3);
             this.btnCancel.Name = "btnCancel";
-            this.btnCancel.Size = new System.Drawing.Size(128, 42);
+            this.btnCancel.Size = new System.Drawing.Size(85, 26);
             this.btnCancel.TabIndex = 12;
             this.btnCancel.Text = "取消";
             this.btnCancel.UseVisualStyleBackColor = true;
             this.btnCancel.Click += new System.EventHandler(this.btnCancel_Click);
-            // 
+            //
+            // btnOk
+            //
+            this.btnOk.Location = new System.Drawing.Point(264, 3);
+            this.btnOk.Name = "btnOk";
+            this.btnOk.Size = new System.Drawing.Size(85, 26);
+            this.btnOk.TabIndex = 11;
+            this.btnOk.Text = "确定";
+            this.btnOk.UseVisualStyleBackColor = true;
+            this.btnOk.Click += new System.EventHandler(this.btnOk_Click);
+            //
             // UniqueValueRenderDialog
-            // 
+            //
             this.AcceptButton = this.btnOk;
-            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 18F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnCancel;
-            this.ClientSize = new System.Drawing.Size(705, 600);
-            this.Controls.Add(this.lblField);
-            this.Controls.Add(this.cboField);
-            this.Controls.Add(this.lblRamp);
-            this.Controls.Add(this.cboRamp);
-            this.Controls.Add(this.lblColorCount);
-            this.Controls.Add(this.numColorCount);
-            this.Controls.Add(this.chkAutoColorCount);
-            this.Controls.Add(this.picRamp);
-            this.Controls.Add(this.lblValues);
-            this.Controls.Add(this.lstValues);
-            this.Controls.Add(this.chkUseDefault);
-            this.Controls.Add(this.btnOk);
-            this.Controls.Add(this.btnCancel);
+            this.ClientSize = new System.Drawing.Size(470, 400);
+            this.Controls.Add(this.tlpMain);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
-            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "UniqueValueRenderDialog";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "唯一值渲染设置";
+            this.tlpMain.ResumeLayout(false);
+            this.tlpMain.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numColorCount)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.picRamp)).EndInit();
+            this.flpButtons.ResumeLayout(false);
             this.ResumeLayout(false);
-            this.PerformLayout();
 
         }
 
         #endregion
 
+        private System.Windows.Forms.TableLayoutPanel tlpMain;
         private System.Windows.Forms.Label lblField;
         private System.Windows.Forms.ComboBox cboField;
         private System.Windows.Forms.Label lblRamp;
@@ -250,6 +270,7 @@
         private System.Windows.Forms.Label lblValues;
         private System.Windows.Forms.ListBox lstValues;
         private System.Windows.Forms.CheckBox chkUseDefault;
+        private System.Windows.Forms.FlowLayoutPanel flpButtons;
         private System.Windows.Forms.Button btnOk;
         private System.Windows.Forms.Button btnCancel;
     }

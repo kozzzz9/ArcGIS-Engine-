@@ -1,0 +1,15 @@
+E:\gisarta\gis实习\18.实习六_外观模式\Facade\bin\Debug\net9.0\plainText.json
+E:\gisarta\gis实习\18.实习六_外观模式\Facade\bin\Debug\net9.0\Facade.exe
+E:\gisarta\gis实习\18.实习六_外观模式\Facade\bin\Debug\net9.0\Facade.deps.json
+E:\gisarta\gis实习\18.实习六_外观模式\Facade\bin\Debug\net9.0\Facade.runtimeconfig.json
+E:\gisarta\gis实习\18.实习六_外观模式\Facade\bin\Debug\net9.0\Facade.dll
+E:\gisarta\gis实习\18.实习六_外观模式\Facade\bin\Debug\net9.0\Facade.pdb
+E:\gisarta\gis实习\18.实习六_外观模式\Facade\obj\Debug\net9.0\Facade.GeneratedMSBuildEditorConfig.editorconfig
+E:\gisarta\gis实习\18.实习六_外观模式\Facade\obj\Debug\net9.0\Facade.AssemblyInfoInputs.cache
+E:\gisarta\gis实习\18.实习六_外观模式\Facade\obj\Debug\net9.0\Facade.AssemblyInfo.cs
+E:\gisarta\gis实习\18.实习六_外观模式\Facade\obj\Debug\net9.0\Facade.csproj.CoreCompileInputs.cache
+E:\gisarta\gis实习\18.实习六_外观模式\Facade\obj\Debug\net9.0\Facade.dll
+E:\gisarta\gis实习\18.实习六_外观模式\Facade\obj\Debug\net9.0\refint\Facade.dll
+E:\gisarta\gis实习\18.实习六_外观模式\Facade\obj\Debug\net9.0\Facade.pdb
+E:\gisarta\gis实习\18.实习六_外观模式\Facade\obj\Debug\net9.0\Facade.genruntimeconfig.cache
+E:\gisarta\gis实习\18.实习六_外观模式\Facade\obj\Debug\net9.0\ref\Facade.dll

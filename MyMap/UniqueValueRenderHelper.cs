@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using ESRI.ArcGIS.Carto;
 using ESRI.ArcGIS.Display;
 using ESRI.ArcGIS.esriSystem;
+using ESRI.ArcGIS.Geometry;
 using esriGeometryType = ESRI.ArcGIS.Geometry.esriGeometryType;
 
 namespace MyMap
@@ -320,6 +321,43 @@ namespace MyMap
                 // 转换失败时退回默认颜色
                 return Color.Red;
             }
+        }
+
+        /// <summary>
+        /// 按几何类型创建红色高亮闪烁符号（点圆、线加粗、面空心轮廓）。
+        /// </summary>
+        /// <param name="geometry">待闪烁的几何。</param>
+        public static ISymbol CreateFlashSymbol(ESRI.ArcGIS.Geometry.IGeometry geometry)
+        {
+            IRgbColor red = new RgbColor();
+            red.Red = 255;
+
+            if (geometry is IPolygon)
+            {
+                ISimpleLineSymbol outline = new SimpleLineSymbol();
+                outline.Style = esriSimpleLineStyle.esriSLSSolid;
+                outline.Width = 3;
+                outline.Color = red;
+                ISimpleFillSymbol fillSymbol = new SimpleFillSymbol();
+                fillSymbol.Style = esriSimpleFillStyle.esriSFSHollow;
+                fillSymbol.Outline = outline;
+                return (ISymbol)fillSymbol;
+            }
+
+            if (geometry is IPolyline)
+            {
+                ISimpleLineSymbol lineSymbol = new SimpleLineSymbol();
+                lineSymbol.Style = esriSimpleLineStyle.esriSLSSolid;
+                lineSymbol.Width = 3;
+                lineSymbol.Color = red;
+                return (ISymbol)lineSymbol;
+            }
+
+            ISimpleMarkerSymbol markerSymbol = new SimpleMarkerSymbol();
+            markerSymbol.Style = esriSimpleMarkerStyle.esriSMSCircle;
+            markerSymbol.Size = 14;
+            markerSymbol.Color = red;
+            return (ISymbol)markerSymbol;
         }
 
         /// <summary>

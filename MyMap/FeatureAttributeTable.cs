@@ -6,6 +6,7 @@ using System.IO;
 using System.Text;
 using System.Windows.Forms;
 using ESRI.ArcGIS.Carto;
+using ESRI.ArcGIS.Controls;
 using ESRI.ArcGIS.Geodatabase;
 using ESRI.ArcGIS.Geometry;
 
@@ -23,6 +24,9 @@ namespace MyMap
         /// <summary>主窗体的活动视图，用于定位要素；可为 null。</summary>
         private readonly IActiveView _activeView;
 
+        /// <summary>主窗体的地图控件，用于闪烁定位要素；可为 null。</summary>
+        private readonly AxMapControl _mapControl;
+
         /// <summary>各行对应的要素 OID（与表格行顺序一致）。</summary>
         private readonly List<int> _oids = new List<int>();
 
@@ -34,10 +38,12 @@ namespace MyMap
         /// </summary>
         /// <param name="featureLayer">待展示属性的矢量图层。</param>
         /// <param name="activeView">主窗体的活动视图，用于定位要素；可为 null。</param>
-        public FeatureAttributeTable(IFeatureLayer featureLayer, IActiveView activeView)
+        /// <param name="mapControl">主窗体的地图控件，用于闪烁定位要素；可为 null。</param>
+        public FeatureAttributeTable(IFeatureLayer featureLayer, IActiveView activeView, AxMapControl mapControl)
         {
             _featureLayer = featureLayer;
             _activeView = activeView;
+            _mapControl = mapControl;
             InitializeComponent();
         }
 
@@ -280,12 +286,47 @@ namespace MyMap
                 return;
             }
 
+            LocateSelectedFeature();
+        }
+
+        /// <summary>
+        /// 双击行：非编辑模式下直接定位到该行要素。
+        /// </summary>
+        private void dataGridView_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (chkEditMode.Checked || e.RowIndex < 0)
+            {
+                return;
+            }
+
+            LocateSelectedFeature(e.RowIndex);
+        }
+
+        /// <summary>
+        /// 把主地图缩放到当前选中行要素的范围并闪烁。
+        /// </summary>
+        private void LocateSelectedFeature()
+        {
+            LocateSelectedFeature(-1);
+        }
+
+        /// <summary>
+        /// 把主地图缩放到指定行要素的范围并闪烁；rowIndex 小于 0 时用当前选中行。
+        /// </summary>
+        /// <param name="rowIndex">表格行号。</param>
+        private void LocateSelectedFeature(int rowIndex)
+        {
+            if (rowIndex < 0 && dataGridView.SelectedRows.Count > 0)
+            {
+                rowIndex = dataGridView.SelectedRows[0].Index;
+            }
+
             if (_activeView == null)
             {
                 return;
             }
 
-            int oid = GetOidByRowIndex(dataGridView.SelectedRows[0].Index);
+            int oid = GetOidByRowIndex(rowIndex);
             IFeature feature = _featureLayer.FeatureClass.GetFeature(oid);
             IGeometry geometry = feature.Shape;
             if (geometry == null || geometry.Envelope == null || geometry.Envelope.IsEmpty)
@@ -298,7 +339,15 @@ namespace MyMap
             extent.Expand(1.5, 1.5, true);
             _activeView.Extent = extent;
             _activeView.Refresh();
+
+            // 闪烁高亮该要素
+            if (_mapControl != null)
+            {
+                _mapControl.FlashShape(feature.Shape, 3, 400, UniqueValueRenderHelper.CreateFlashSymbol(feature.Shape));
+            }
         }
+
+
 
         /// <summary>
         /// 导出 CSV：把当前属性表保存为 CSV 文件。
@@ -355,6 +404,37 @@ namespace MyMap
         private static string EscapeCsv(string value)
         {
             return "\"" + value.Replace("\"", "\"\"") + "\"";
+        }
+
+        /// <summary>
+        /// 筛选框文本变化：按关键字过滤表格行（匹配任意列，清空即恢复）。
+        /// </summary>
+        private void txtFilter_TextChanged(object sender, EventArgs e)
+        {
+            string keyword = txtFilter.Text.Trim();
+            foreach (DataGridViewRow row in dataGridView.Rows)
+            {
+                if (row.IsNewRow)
+                {
+                    continue;
+                }
+
+                bool visible = keyword.Length == 0;
+                if (!visible)
+                {
+                    foreach (DataGridViewCell cell in row.Cells)
+                    {
+                        string text = cell.Value == null ? string.Empty : cell.Value.ToString();
+                        if (text.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            visible = true;
+                            break;
+                        }
+                    }
+                }
+
+                row.Visible = visible;
+            }
         }
 
         /// <summary>
