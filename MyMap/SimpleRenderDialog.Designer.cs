@@ -1,4 +1,6 @@
-﻿namespace MyMap
+﻿using MyMapControls;
+
+namespace MyMap
 {
     partial class SimpleRenderDialog
     {
@@ -37,10 +39,10 @@
             this.lblPointSize = new System.Windows.Forms.Label();
             this.numPointSize = new System.Windows.Forms.NumericUpDown();
             this.lblPointColor = new System.Windows.Forms.Label();
-            this.btnPointColor = new MyMap.ColorButton();
+            this.btnPointColor = new MyMapControls.ColorPickerButton();
             this.chkPointOutline = new System.Windows.Forms.CheckBox();
             this.lblPointOutlineColor = new System.Windows.Forms.Label();
-            this.btnPointOutlineColor = new MyMap.ColorButton();
+            this.btnPointOutlineColor = new MyMapControls.ColorPickerButton();
             this.lblPointOutlineSize = new System.Windows.Forms.Label();
             this.numPointOutlineSize = new System.Windows.Forms.NumericUpDown();
             this.tabLine = new System.Windows.Forms.TabPage();
@@ -50,15 +52,15 @@
             this.lblLineWidth = new System.Windows.Forms.Label();
             this.numLineWidth = new System.Windows.Forms.NumericUpDown();
             this.lblLineColor = new System.Windows.Forms.Label();
-            this.btnLineColor = new MyMap.ColorButton();
+            this.btnLineColor = new MyMapControls.ColorPickerButton();
             this.tabPolygon = new System.Windows.Forms.TabPage();
             this.tlpPolygon = new System.Windows.Forms.TableLayoutPanel();
             this.lblFillStyle = new System.Windows.Forms.Label();
             this.cboFillStyle = new System.Windows.Forms.ComboBox();
             this.lblFillColor = new System.Windows.Forms.Label();
-            this.btnFillColor = new MyMap.ColorButton();
+            this.btnFillColor = new MyMapControls.ColorPickerButton();
             this.lblOutlineColor = new System.Windows.Forms.Label();
-            this.btnOutlineColor = new MyMap.ColorButton();
+            this.btnOutlineColor = new MyMapControls.ColorPickerButton();
             this.lblOutlineWidth = new System.Windows.Forms.Label();
             this.numOutlineWidth = new System.Windows.Forms.NumericUpDown();
             this.tlpPreview = new System.Windows.Forms.TableLayoutPanel();
@@ -709,10 +711,8 @@
         private System.Windows.Forms.Label lblPointSize;
         private System.Windows.Forms.NumericUpDown numPointSize;
         private System.Windows.Forms.Label lblPointColor;
-        private ColorButton btnPointColor;
         private System.Windows.Forms.CheckBox chkPointOutline;
         private System.Windows.Forms.Label lblPointOutlineColor;
-        private ColorButton btnPointOutlineColor;
         private System.Windows.Forms.Label lblPointOutlineSize;
         private System.Windows.Forms.NumericUpDown numPointOutlineSize;
         private System.Windows.Forms.TabPage tabLine;
@@ -722,15 +722,12 @@
         private System.Windows.Forms.Label lblLineWidth;
         private System.Windows.Forms.NumericUpDown numLineWidth;
         private System.Windows.Forms.Label lblLineColor;
-        private ColorButton btnLineColor;
         private System.Windows.Forms.TabPage tabPolygon;
         private System.Windows.Forms.TableLayoutPanel tlpPolygon;
         private System.Windows.Forms.Label lblFillStyle;
         private System.Windows.Forms.ComboBox cboFillStyle;
         private System.Windows.Forms.Label lblFillColor;
-        private ColorButton btnFillColor;
         private System.Windows.Forms.Label lblOutlineColor;
-        private ColorButton btnOutlineColor;
         private System.Windows.Forms.Label lblOutlineWidth;
         private System.Windows.Forms.NumericUpDown numOutlineWidth;
         private System.Windows.Forms.TableLayoutPanel tlpPreview;
@@ -739,5 +736,10 @@
         private System.Windows.Forms.FlowLayoutPanel flpButtons;
         private System.Windows.Forms.Button btnOk;
         private System.Windows.Forms.Button btnCancel;
+        private ColorPickerButton btnPointColor;
+        private ColorPickerButton btnPointOutlineColor;
+        private ColorPickerButton btnLineColor;
+        private ColorPickerButton btnFillColor;
+        private ColorPickerButton btnOutlineColor;
     }
 }

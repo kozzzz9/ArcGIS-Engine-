@@ -3,6 +3,7 @@ using System.Data;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
+using WeifenLuo.WinFormsUI.Docking;
 using ESRI.ArcGIS.Carto;
 using ESRI.ArcGIS.Controls;
 using ESRI.ArcGIS.DataSourcesFile;
@@ -52,6 +53,42 @@ namespace MyMap
         /// <summary>"添加文字标注"菜单项引用（供模式互斥取消勾选）。</summary>
         private ToolStripMenuItem _addTextAnnotationItem;
 
+        /// <summary>已新建的地图视图数量（用于视图标题编号）。</summary>
+        private int _mapViewCount;
+
+        /// <summary>承载原有地图布局的文档停靠窗（DockPanelSuite）。</summary>
+
+
+        /// <summary>承载原有地图布局的文档停靠窗（DockPanelSuite）。</summary>
+        private DockContent _mapHost;
+
+        /// <summary>聚类结果停靠窗（重复聚类时先关闭旧的）。</summary>
+        private ClusterResultDockWindow _clusterResultWindow;
+
+        /// <summary>聚类分析停靠面板（算法下拉 + 参数 + 执行 + 日志）。</summary>
+        private ClusterToolDockWindow _clusterToolWindow;
+
+        /// <summary>数据目录停靠面板（Catalog 视图）。</summary>
+        private CatalogDockWindow _catalogWindow;
+
+        /// <summary>选择要素停靠面板（Select 视图）。</summary>
+        private SelectionPanel _selectionPanel;
+
+        /// <summary>符号系统停靠面板（Symbology 视图）。</summary>
+        private SymbologyPanel _symbologyPanel;
+
+        /// <summary>书签停靠面板（Bookmarks 视图）。</summary>
+        private BookmarksPanel _bookmarksPanel;
+
+        /// <summary>消息日志停靠面板。</summary>
+        private LogPanel _logPanel;
+
+        /// <summary>最近一次聚类结果（供结果窗双击闪亮簇使用）。</summary>
+        private ClusterResult _clusterResult;
+
+        /// <summary>最近一次聚类的图层（供结果窗双击闪亮簇使用）。</summary>
+        private IFeatureLayer _clusterFeatureLayer;
+
         /// <summary>空间查询模式标记：0 关闭、1 点查询、2 线查询、3 矩形查询、4 圆查询。</summary>
         private int m_iMouseFlag = 0;
 
@@ -82,15 +119,6 @@ namespace MyMap
         /// <summary>当前测量结果图形（结果对话框关闭后自动移除）。</summary>
         private IElement _measureElement;
 
-        /// <summary>
-        /// 嵌套的 ColorButton 类型别名。窗体类与命名空间同名，设计器序列化
-        /// 会把 SimpleRenderDialog.Designer.cs 中的 new ColorButton() 写成
-        /// new MyMap.ColorButton()，从而触发 CS0426 类型遮蔽错误；此嵌套类
-        /// 继承自 MyMap 命名空间的 ColorButton，使两种写法都合法且行为一致。
-        /// </summary>
-        public class ColorButton : global::MyMap.ColorButton
-        {
-        }
 
         /// <summary>地图交互动作模式。</summary>
         private enum MapAction
@@ -127,6 +155,19 @@ namespace MyMap
             BuildTocContextMenu();
             BuildMapContextMenu();
 
+            // DockPanelSuite 停靠布局：主地图作为文档窗承载，聚类面板停靠右侧，
+            // 均可拖拽、浮动、自动隐藏（ArcGIS Pro 式的视图组织方式）
+            dockPanel1.DocumentStyle = WeifenLuo.WinFormsUI.Docking.DocumentStyle.DockingWindow;
+            dockPanel1.Theme = new VS2015LightTheme();
+            _mapHost = new DockContent();
+            _mapHost.Name = "mapHost";
+            _mapHost.Text = "地图视图";
+            _mapHost.DockAreas = DockAreas.Document;
+            _mapHost.CloseButtonVisible = false;
+
+            _mapHost.Controls.Add(splitContainer1);
+            _mapHost.Show(dockPanel1, DockState.Document);
+
             // 鹰眼图控件已在设计器中声明，位于分割面板下部（常驻可见）
 
             // SplitterDistance 序列化为像素值，不随窗体字体缩放同步，
@@ -137,6 +178,7 @@ namespace MyMap
             // 主地图加载文档或图层后同步鹰眼图（OnAfterDraw 每次绘制都触发，
             // 用图层结构签名去重，只在图层增删时重建鹰眼图层）
             axMapControl1.OnAfterDraw += new IMapControlEvents2_Ax_OnAfterDrawEventHandler(axMapControl1_OnAfterDraw);
+
 
             // 工具栏补充常用地图浏览工具；失败时保留菜单操作入口
             try
@@ -203,6 +245,7 @@ namespace MyMap
             axMapControl1.ActiveView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
             UpdateStatusBar();
             SyncOverview();
+            Log("已添加矢量图层：" + featureLayer.Name);
         }
 
         /// <summary>
@@ -263,6 +306,7 @@ namespace MyMap
             axMapControl1.ActiveView.PartialRefresh(esriViewDrawPhase.esriViewAll, null, null);
             UpdateStatusBar();
             SyncOverview();
+            Log("已添加栅格图层：" + rasterLayer.Name);
         }
 
         #endregion
@@ -483,6 +527,495 @@ namespace MyMap
 
             // 地图刷新
             axMapControl1.Refresh();
+        }
+
+        #endregion
+
+        #region 柱状统计专题图
+
+        /// <summary>
+        /// 柱状图菜单：弹出柱状类型参数对话框并渲染柱状统计专题图。
+        /// </summary>
+        private void barChartMenuItem_Click(object sender, EventArgs e)
+        {
+            ShowChartDialog(ChartType.BarChart);
+        }
+
+        /// <summary>
+        /// 饼状图菜单：弹出饼状类型参数对话框并渲染饼状统计专题图。
+        /// </summary>
+        private void pieChartMenuItem_Click(object sender, EventArgs e)
+        {
+            ShowChartDialog(ChartType.PieChart);
+        }
+
+        /// <summary>
+        /// 堆叠柱状图菜单：弹出堆叠类型参数对话框并渲染堆叠柱状统计专题图。
+        /// </summary>
+        private void stackedChartMenuItem_Click(object sender, EventArgs e)
+        {
+            ShowChartDialog(ChartType.StackedChart);
+        }
+
+        /// <summary>
+        /// 统计专题图菜单公共流程：
+        /// 取选中矢量图层 → 打开预置图表类型的参数对话框 → 按类型分派渲染。
+        /// </summary>
+        /// <param name="chartType">菜单预置的图表类型。</param>
+        private void ShowChartDialog(ChartType chartType)
+        {
+            IFeatureLayer featureLayer = GetSelectedFeatureLayer();
+            if (featureLayer == null)
+            {
+                return;
+            }
+
+            IFeatureClass featureClass = featureLayer.FeatureClass;
+            if (featureClass == null)
+            {
+                MessageBox.Show("该图层没有对应的要素类！");
+                return;
+            }
+
+            using (BarChartDialog dialog = new BarChartDialog(featureLayer, chartType))
+            {
+                if (dialog.ShowDialog(this) != DialogResult.OK)
+                {
+                    return;
+                }
+
+                try
+                {
+                    switch (dialog.SelectedChartType)
+                    {
+                        case ChartType.PieChart:
+                            RenderPieChart(featureLayer, dialog.SelectedFields,
+                                dialog.ChartSize, dialog.PieClockwise,
+                                dialog.PieOutlineWidth, dialog.BackgroundColor);
+                            break;
+                        case ChartType.StackedChart:
+                            RenderStackedChart(featureLayer, dialog.SelectedFields,
+                                dialog.BarWidth, dialog.ChartSize,
+                                dialog.VerticalBars, dialog.FixedStacked,
+                                dialog.BackgroundColor);
+                            break;
+                        default:
+                            RenderBarChart(featureLayer, dialog.SelectedFields,
+                                dialog.BarWidth, dialog.BarSpacing, dialog.ChartSize,
+                                dialog.VerticalBars, dialog.BackgroundColor);
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("统计图渲染失败：" + ex.Message);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 柱状统计专题图渲染（实习十八手册 A-I 流程）：
+        /// A 创建 ChartRenderer；B 设置统计字段；C 用 IDataStatistics 求字段最大值；
+        /// D 通过 IBarChartSymbol/IChartSymbol/IMarkerSymbol 定义样式；
+        /// E 通过 ISymbolArray 为每个字段添加 SimpleFillSymbol；F 设置背景符号；
+        /// G UseOverposter 让图表位于要素几何中央；H 关联 IGeoFeatureLayer；I 重绘。
+        /// </summary>
+        /// <param name="featureLayer">目标矢量图层。</param>
+        /// <param name="chartFields">参与统计的字段与颜色。</param>
+        /// <param name="barWidth">柱宽度。</param>
+        /// <param name="barSpacing">柱间距。</param>
+        /// <param name="chartSize">图表最大高度。</param>
+        /// <param name="verticalBars">是否垂直柱状。</param>
+        /// <param name="backgroundColor">图表背景色。</param>
+        private void RenderBarChart(IFeatureLayer featureLayer, List<BarChartField> chartFields,
+            double barWidth, double barSpacing, double chartSize, bool verticalBars, Color backgroundColor)
+        {
+            // A. 创建 IChartRenderer 实例
+            IChartRenderer chartRenderer = (IChartRenderer)new ChartRenderer();
+
+            // B. 通过 IRendererFields 设置符号关联的字段信息
+            IRendererFields rendererFields = (IRendererFields)chartRenderer;
+            foreach (BarChartField chartField in chartFields)
+            {
+                rendererFields.AddField(chartField.FieldName, chartField.FieldName);
+            }
+
+            // C. 通过 IDataStatistics 求所有字段中的最大值，作为柱状图的最高尺寸对应的值
+            double maxValue = 0.0;
+            IFeatureClass featureClass = featureLayer.FeatureClass;
+            foreach (BarChartField chartField in chartFields)
+            {
+                int fieldIndex = featureClass.Fields.FindField(chartField.FieldName);
+                if (fieldIndex < 0)
+                {
+                    throw new ArgumentException("未找到字段：" + chartField.FieldName);
+                }
+
+                IQueryFilter queryFilter = new QueryFilter();
+                queryFilter.SubFields = chartField.FieldName;
+                ICursor cursor = (ICursor)featureClass.Search(queryFilter, true);
+                try
+                {
+                    IDataStatistics dataStatistics = new DataStatistics();
+                    dataStatistics.Cursor = cursor;
+                    dataStatistics.Field = chartField.FieldName;
+                    IStatisticsResults statistics = dataStatistics.Statistics;
+                    if (statistics != null && statistics.Maximum > maxValue)
+                    {
+                        maxValue = statistics.Maximum;
+                    }
+                }
+                finally
+                {
+                    UniqueValueRenderHelper.ReleaseComObject(cursor);
+                }
+            }
+
+            if (maxValue <= 0)
+            {
+                throw new ArgumentException("所选字段的值全部不大于 0，无法渲染柱状图！");
+            }
+
+            // D. 通过 IBarChartSymbol/IChartSymbol/IMarkerSymbol 定义样式
+            IBarChartSymbol barChartSymbol = (IBarChartSymbol)new BarChartSymbol();
+            barChartSymbol.Width = barWidth;
+            barChartSymbol.Spacing = barSpacing;
+            barChartSymbol.VerticalBars = verticalBars;
+
+            IChartSymbol chartSymbol = (IChartSymbol)barChartSymbol;
+            chartSymbol.MaxValue = maxValue;
+
+            IMarkerSymbol markerSymbol = (IMarkerSymbol)barChartSymbol;
+            markerSymbol.Size = chartSize;
+
+            // E. 通过 ISymbolArray 为每个字段添加一个 SimpleFillSymbol
+            ISymbolArray symbolArray = (ISymbolArray)barChartSymbol;
+            foreach (BarChartField chartField in chartFields)
+            {
+                ISimpleFillSymbol fillSymbol = (ISimpleFillSymbol)new SimpleFillSymbol();
+                fillSymbol.Color = ToArcGisColor(chartField.Color);
+                symbolArray.AddSymbol((ISymbol)fillSymbol);
+            }
+
+            chartRenderer.ChartSymbol = chartSymbol;
+
+            // F. 设置统计符号的背景色
+            ISimpleFillSymbol backgroundSymbol = (ISimpleFillSymbol)new SimpleFillSymbol();
+            backgroundSymbol.Color = ToArcGisColor(backgroundColor);
+            ISimpleLineSymbol backgroundOutline = (ISimpleLineSymbol)new SimpleLineSymbol();
+            backgroundOutline.Style = esriSimpleLineStyle.esriSLSSolid;
+            backgroundOutline.Width = 0.4;
+            IRgbColor outlineColor = new RgbColor();
+            outlineColor.Red = 120;
+            outlineColor.Green = 120;
+            outlineColor.Blue = 120;
+            backgroundOutline.Color = outlineColor;
+            backgroundSymbol.Outline = backgroundOutline;
+            chartRenderer.BaseSymbol = (ISymbol)backgroundSymbol;
+
+            // G. 图表符号位于要素几何中央
+            chartRenderer.UseOverposter = true;
+
+            // H. 为 IGeoFeatureLayer 关联渲染符号
+            IGeoFeatureLayer geoFeatureLayer = featureLayer as IGeoFeatureLayer;
+            if (geoFeatureLayer == null)
+            {
+                throw new ArgumentException("该图层不支持专题渲染！");
+            }
+            geoFeatureLayer.Renderer = (IFeatureRenderer)chartRenderer;
+
+            // I. 图层重绘
+            axMapControl1.Refresh();
+            axTOCControl1.Refresh();
+            Log(string.Format("柱状统计专题图渲染完成：字段 {0}。", chartFields.Count) + string.Join("、",
+                ConvertAll(chartFields, delegate(BarChartField f) { return f.FieldName; }).ToArray()));
+        }
+
+        /// <summary>
+        /// 饼状统计专题图渲染（柱状 A-I 流程的饼图变体）：
+        /// A 创建 ChartRenderer；B 设置统计字段；C 用要素游标求各要素字段合计的最大值；
+        /// D 通过 IPieChartSymbol/IChartSymbol/IMarkerSymbol 定义样式（顺时针扇形）；
+        /// E 通过 ISymbolArray 为每个字段添加 SimpleFillSymbol；F 设置背景符号；
+        /// G UseOverposter 让图表位于要素几何中央；H 关联 IGeoFeatureLayer；I 重绘。
+        /// </summary>
+        /// <param name="featureLayer">目标矢量图层。</param>
+        /// <param name="chartFields">参与统计的字段与颜色。</param>
+        /// <param name="chartSize">图表最大直径（IMarkerSymbol.Size）。</param>
+        /// <param name="backgroundColor">图表背景色。</param>
+        private void RenderPieChart(IFeatureLayer featureLayer, List<BarChartField> chartFields,
+            double chartSize, bool pieClockwise, double pieOutlineWidth, Color backgroundColor)
+        {
+            // A. 创建 IChartRenderer 实例
+            IChartRenderer chartRenderer = (IChartRenderer)new ChartRenderer();
+
+            // B. 通过 IRendererFields 设置符号关联的字段信息
+            IRendererFields rendererFields = (IRendererFields)chartRenderer;
+            foreach (BarChartField chartField in chartFields)
+            {
+                rendererFields.AddField(chartField.FieldName, chartField.FieldName);
+            }
+
+            // C. 饼图大小按“单个要素内所有字段之和”相对缩放：最大合计值对应图表最大直径。
+            //    （与柱状不同：柱状按单字段最大值缩放，饼状必须先累加各字段）
+            IFeatureClass featureClass = featureLayer.FeatureClass;
+            List<int> fieldIndexes = new List<int>();
+            foreach (BarChartField chartField in chartFields)
+            {
+                int fieldIndex = featureClass.Fields.FindField(chartField.FieldName);
+                if (fieldIndex < 0)
+                {
+                    throw new ArgumentException("未找到字段：" + chartField.FieldName);
+                }
+                fieldIndexes.Add(fieldIndex);
+            }
+
+            double maxValue = 0.0;
+            IQueryFilter queryFilter = new QueryFilter();
+            queryFilter.SubFields = string.Join(",", ConvertAll(chartFields,
+                delegate(BarChartField f) { return f.FieldName; }).ToArray());
+            IFeatureCursor featureCursor = (IFeatureCursor)featureClass.Search(queryFilter, true);
+            try
+            {
+                IFeature feature = featureCursor.NextFeature();
+                while (feature != null)
+                {
+                    double total = 0.0;
+                    for (int i = 0; i < fieldIndexes.Count; i++)
+                    {
+                        object value = feature.get_Value(fieldIndexes[i]);
+                        if (value != null && !(value is DBNull))
+                        {
+                            double number = Convert.ToDouble(value);
+                            if (number > 0)
+                            {
+                                total += number;
+                            }
+                        }
+                    }
+                    if (total > maxValue)
+                    {
+                        maxValue = total;
+                    }
+                    feature = featureCursor.NextFeature();
+                }
+            }
+            finally
+            {
+                UniqueValueRenderHelper.ReleaseComObject(featureCursor);
+            }
+
+            if (maxValue <= 0)
+            {
+                throw new ArgumentException("所选字段的值全部不大于 0，无法渲染饼状图！");
+            }
+
+            // D. 通过 IPieChartSymbol/IChartSymbol/IMarkerSymbol 定义样式
+            IPieChartSymbol pieChartSymbol = (IPieChartSymbol)new PieChartSymbol();
+            pieChartSymbol.Clockwise = pieClockwise;
+
+            // 扇区描边：细灰线分隔相邻扇形
+            ILineSymbol pieOutline = (ILineSymbol)new SimpleLineSymbol();
+            pieOutline.Width = pieOutlineWidth;
+            IRgbColor pieOutlineColor = new RgbColor();
+            pieOutlineColor.Red = 120;
+            pieOutlineColor.Green = 120;
+            pieOutlineColor.Blue = 120;
+            pieOutline.Color = pieOutlineColor;
+            pieChartSymbol.UseOutline = true;
+            pieChartSymbol.Outline = pieOutline;
+
+            IChartSymbol chartSymbol = (IChartSymbol)pieChartSymbol;
+            chartSymbol.MaxValue = maxValue;
+
+            IMarkerSymbol markerSymbol = (IMarkerSymbol)pieChartSymbol;
+            markerSymbol.Size = chartSize;
+
+            // E. 通过 ISymbolArray 为每个字段添加一个 SimpleFillSymbol（扇形配色顺序与字段一致）
+            ISymbolArray symbolArray = (ISymbolArray)pieChartSymbol;
+            foreach (BarChartField chartField in chartFields)
+            {
+                ISimpleFillSymbol fillSymbol = (ISimpleFillSymbol)new SimpleFillSymbol();
+                fillSymbol.Color = ToArcGisColor(chartField.Color);
+                symbolArray.AddSymbol((ISymbol)fillSymbol);
+            }
+
+            chartRenderer.ChartSymbol = chartSymbol;
+
+            // F. 设置统计符号的背景色
+            ISimpleFillSymbol backgroundSymbol = (ISimpleFillSymbol)new SimpleFillSymbol();
+            backgroundSymbol.Color = ToArcGisColor(backgroundColor);
+            ISimpleLineSymbol backgroundOutline = (ISimpleLineSymbol)new SimpleLineSymbol();
+            backgroundOutline.Style = esriSimpleLineStyle.esriSLSSolid;
+            backgroundOutline.Width = 0.4;
+            IRgbColor outlineColor = new RgbColor();
+            outlineColor.Red = 120;
+            outlineColor.Green = 120;
+            outlineColor.Blue = 120;
+            backgroundOutline.Color = outlineColor;
+            backgroundSymbol.Outline = backgroundOutline;
+            chartRenderer.BaseSymbol = (ISymbol)backgroundSymbol;
+
+            // G. 图表符号位于要素几何中央
+            chartRenderer.UseOverposter = true;
+
+            // H. 为 IGeoFeatureLayer 关联渲染符号
+            IGeoFeatureLayer geoFeatureLayer = featureLayer as IGeoFeatureLayer;
+            if (geoFeatureLayer == null)
+            {
+                throw new ArgumentException("该图层不支持专题渲染！");
+            }
+            geoFeatureLayer.Renderer = (IFeatureRenderer)chartRenderer;
+
+            // I. 图层重绘
+            axMapControl1.Refresh();
+            axTOCControl1.Refresh();
+            Log(string.Format("饼状统计专题图渲染完成：字段 {0}。", chartFields.Count) + string.Join("、",
+                ConvertAll(chartFields, delegate(BarChartField f) { return f.FieldName; }).ToArray()));
+        }
+
+        /// <summary>
+        /// 堆叠柱状统计专题图渲染（柱状 A-I 流程的堆叠变体）：
+        /// A 创建 ChartRenderer；B 设置统计字段；C 用要素游标求各要素字段合计的最大值；
+        /// D 通过 IStackedChartSymbol/IChartSymbol/IMarkerSymbol 定义样式
+        ///   （Fixed 为真时按百分比把每根堆叠柱拉伸至最大高度）；
+        /// E 通过 ISymbolArray 为每个字段添加 SimpleFillSymbol（堆叠顺序与字段顺序一致）；
+        /// F 设置背景符号；G UseOverposter 让图表位于要素几何中央；
+        /// H 关联 IGeoFeatureLayer；I 重绘。
+        /// </summary>
+        /// <param name="featureLayer">目标矢量图层。</param>
+        /// <param name="chartFields">参与统计的字段与颜色。</param>
+        /// <param name="barWidth">堆叠柱宽度（IStackedChartSymbol.Width）。</param>
+        /// <param name="chartSize">图表最大高度（IMarkerSymbol.Size）。</param>
+        /// <param name="verticalBars">是否垂直堆叠（IStackedChartSymbol.VerticalBar）。</param>
+        /// <param name="fixedStacked">是否按百分比拉伸至最大高度（IStackedChartSymbol.Fixed）。</param>
+        /// <param name="backgroundColor">图表背景色。</param>
+        private void RenderStackedChart(IFeatureLayer featureLayer, List<BarChartField> chartFields,
+            double barWidth, double chartSize, bool verticalBars, bool fixedStacked, Color backgroundColor)
+        {
+            // A. 创建 IChartRenderer 实例
+            IChartRenderer chartRenderer = (IChartRenderer)new ChartRenderer();
+
+            // B. 通过 IRendererFields 设置符号关联的字段信息
+            IRendererFields rendererFields = (IRendererFields)chartRenderer;
+            foreach (BarChartField chartField in chartFields)
+            {
+                rendererFields.AddField(chartField.FieldName, chartField.FieldName);
+            }
+
+            // C. 堆叠高度按“单个要素内所有字段之和”相对缩放（与饼状一致）：最大合计值对应图表最大高度
+            IFeatureClass featureClass = featureLayer.FeatureClass;
+            List<int> fieldIndexes = new List<int>();
+            foreach (BarChartField chartField in chartFields)
+            {
+                int fieldIndex = featureClass.Fields.FindField(chartField.FieldName);
+                if (fieldIndex < 0)
+                {
+                    throw new ArgumentException("未找到字段：" + chartField.FieldName);
+                }
+                fieldIndexes.Add(fieldIndex);
+            }
+
+            double maxValue = 0.0;
+            IQueryFilter queryFilter = new QueryFilter();
+            queryFilter.SubFields = string.Join(",", ConvertAll(chartFields,
+                delegate(BarChartField f) { return f.FieldName; }).ToArray());
+            IFeatureCursor featureCursor = (IFeatureCursor)featureClass.Search(queryFilter, true);
+            try
+            {
+                IFeature feature = featureCursor.NextFeature();
+                while (feature != null)
+                {
+                    double total = 0.0;
+                    for (int i = 0; i < fieldIndexes.Count; i++)
+                    {
+                        object value = feature.get_Value(fieldIndexes[i]);
+                        if (value != null && !(value is DBNull))
+                        {
+                            double number = Convert.ToDouble(value);
+                            if (number > 0)
+                            {
+                                total += number;
+                            }
+                        }
+                    }
+                    if (total > maxValue)
+                    {
+                        maxValue = total;
+                    }
+                    feature = featureCursor.NextFeature();
+                }
+            }
+            finally
+            {
+                UniqueValueRenderHelper.ReleaseComObject(featureCursor);
+            }
+
+            if (maxValue <= 0)
+            {
+                throw new ArgumentException("所选字段的值全部不大于 0，无法渲染堆叠柱状图！");
+            }
+
+            // D. 通过 IStackedChartSymbol/IChartSymbol/IMarkerSymbol 定义样式
+            IStackedChartSymbol stackedChartSymbol = (IStackedChartSymbol)new StackedChartSymbol();
+            stackedChartSymbol.Width = barWidth;
+            stackedChartSymbol.VerticalBar = verticalBars;
+            stackedChartSymbol.Fixed = fixedStacked;
+
+            IChartSymbol chartSymbol = (IChartSymbol)stackedChartSymbol;
+            chartSymbol.MaxValue = maxValue;
+
+            IMarkerSymbol markerSymbol = (IMarkerSymbol)stackedChartSymbol;
+            markerSymbol.Size = chartSize;
+
+            // E. 通过 ISymbolArray 为每个字段添加一个 SimpleFillSymbol（堆叠顺序与字段顺序一致）
+            ISymbolArray symbolArray = (ISymbolArray)stackedChartSymbol;
+            foreach (BarChartField chartField in chartFields)
+            {
+                ISimpleFillSymbol fillSymbol = (ISimpleFillSymbol)new SimpleFillSymbol();
+                fillSymbol.Color = ToArcGisColor(chartField.Color);
+                symbolArray.AddSymbol((ISymbol)fillSymbol);
+            }
+
+            chartRenderer.ChartSymbol = chartSymbol;
+
+            // F. 设置统计符号的背景色
+            ISimpleFillSymbol backgroundSymbol = (ISimpleFillSymbol)new SimpleFillSymbol();
+            backgroundSymbol.Color = ToArcGisColor(backgroundColor);
+            ISimpleLineSymbol backgroundOutline = (ISimpleLineSymbol)new SimpleLineSymbol();
+            backgroundOutline.Style = esriSimpleLineStyle.esriSLSSolid;
+            backgroundOutline.Width = 0.4;
+            IRgbColor outlineColor = new RgbColor();
+            outlineColor.Red = 120;
+            outlineColor.Green = 120;
+            outlineColor.Blue = 120;
+            backgroundOutline.Color = outlineColor;
+            backgroundSymbol.Outline = backgroundOutline;
+            chartRenderer.BaseSymbol = (ISymbol)backgroundSymbol;
+
+            // G. 图表符号位于要素几何中央
+            chartRenderer.UseOverposter = true;
+
+            // H. 为 IGeoFeatureLayer 关联渲染符号
+            IGeoFeatureLayer geoFeatureLayer = featureLayer as IGeoFeatureLayer;
+            if (geoFeatureLayer == null)
+            {
+                throw new ArgumentException("该图层不支持专题渲染！");
+            }
+            geoFeatureLayer.Renderer = (IFeatureRenderer)chartRenderer;
+
+            // I. 图层重绘
+            axMapControl1.Refresh();
+            axTOCControl1.Refresh();
+            Log(string.Format("堆叠柱状统计专题图渲染完成：字段 {0}。", chartFields.Count) + string.Join("、",
+                ConvertAll(chartFields, delegate(BarChartField f) { return f.FieldName; }).ToArray()));
+        }
+
+        /// <summary>
+        /// 把一种元素类型转换为另一种（List 转换辅助）。
+        /// </summary>
+        private static List<TOutput> ConvertAll<TInput, TOutput>(List<TInput> list, Converter<TInput, TOutput> converter)
+        {
+            return list.ConvertAll(converter);
         }
 
         #endregion
@@ -985,6 +1518,7 @@ namespace MyMap
                 activeView.Output(hDC, (int)export.Resolution, ref exportFrame, null, trackCancel);
                 export.FinishExporting();
                 export.Cleanup();
+                Log("地图导出成功：" + fileName);
                 MessageBox.Show("地图导出成功：" + fileName);
             }
             catch (Exception ex)
@@ -1164,6 +1698,7 @@ namespace MyMap
                 try
                 {
                     int count = SelectFeaturesByWhere(dialog.SelectedLayer, dialog.WhereClause);
+                    Log(string.Format("属性查询完成，共选中 {0} 个要素。", count));
                     MessageBox.Show(string.Format("属性查询完成，共选中 {0} 个要素。", count));
                 }
                 catch (Exception ex)
@@ -2684,6 +3219,12 @@ namespace MyMap
                 "图层数：{0}    选中要素：{1}",
                 axMapControl1.Map.LayerCount,
                 axMapControl1.Map.SelectionCount);
+
+            // 选择要素面板打开时同步刷新列表
+            if (_selectionPanel != null && !_selectionPanel.IsDisposed)
+            {
+                _selectionPanel.RefreshSelection();
+            }
         }
 
         #endregion
@@ -3001,7 +3542,7 @@ namespace MyMap
             container.DeleteAllElements();
             _measureElement = null;
             axMapControl1.ActiveView.PartialRefresh(esriViewDrawPhase.esriViewGraphics, null, null);
-            statusStripInfoLabel.Text = "已清除分析结果。";
+            Log("已清除分析结果。");
         }
 
         #endregion
@@ -3317,6 +3858,597 @@ namespace MyMap
 
         #endregion
 
+        #region 新建地图视图
+
+        /// <summary>
+        /// 新建地图视图：以当前地图内容为副本创建一个独立浏览视图，
+        /// 自带缩放/漫游工具栏，作为新的文档标签显示（ArcGIS Pro 式多视图）。
+        /// </summary>
+        private void newMapViewMenuItem_Click(object sender, EventArgs e)
+        {
+            if (axMapControl1.Map.LayerCount == 0)
+            {
+                MessageBox.Show("当前地图没有图层，请先添加数据再新建视图！");
+                return;
+            }
+
+            _mapViewCount++;
+
+            // 先创建宿主并显示（确保 ActiveX 控件句柄创建），再配置工具栏
+            AxMapControl viewControl = new AxMapControl();
+            viewControl.Dock = DockStyle.Fill;
+
+            AxToolbarControl viewToolbar = new AxToolbarControl();
+            viewToolbar.Dock = DockStyle.Top;
+
+            DockContent viewHost = new DockContent();
+            viewHost.Name = "mapView" + _mapViewCount;
+            viewHost.Text = "地图视图 " + _mapViewCount;
+            viewHost.DockAreas = DockAreas.Document;
+            viewHost.Controls.Add(viewControl);
+            viewHost.Controls.Add(viewToolbar);
+            viewHost.Show(dockPanel1, DockState.Document);
+            viewHost.BringToFront();
+
+            // 句柄已就绪，安全配置 ActiveX 工具栏
+            viewToolbar.AddItem(new ControlsMapZoomInTool());
+            viewToolbar.AddItem(new ControlsMapZoomOutTool());
+            viewToolbar.AddItem(new ControlsMapPanTool());
+            viewToolbar.AddItem(new ControlsMapFullExtentCommand());
+            viewToolbar.SetBuddyControl(viewControl);
+
+            // 主地图内容副本：多视图同数据、独立缩放浏览
+            IObjectCopy objectCopy = (IObjectCopy)new ObjectCopy();
+            object copiedMap = objectCopy.Copy(axMapControl1.Map);
+            object targetMap = viewControl.Map;
+            objectCopy.Overwrite(copiedMap, ref targetMap);
+
+            viewControl.Extent = viewControl.FullExtent;
+            viewControl.ActiveView.Refresh();
+            statusStripInfoLabel.Text = "已新建地图视图 " + _mapViewCount + "（当前地图的浏览副本）。";
+        }
+
+        #endregion
+
+        #region 数据目录面板
+
+        /// <summary>
+        /// 数据目录面板菜单：打开（或激活）Catalog 数据目录停靠面板。
+        /// </summary>
+        private void openCatalogPanelMenuItem_Click(object sender, EventArgs e)
+        {
+            if (_catalogWindow == null || _catalogWindow.IsDisposed)
+            {
+                _catalogWindow = new CatalogDockWindow();
+                _catalogWindow.MainMap = axMapControl1;
+                _catalogWindow.FileLoaded += catalogWindow_FileLoaded;
+                _catalogWindow.Show(dockPanel1, DockState.DockLeft);
+            }
+            _catalogWindow.Activate();
+        }
+
+        /// <summary>
+        /// 数据目录加载文件后：刷新状态栏并同步鹰眼。
+        /// </summary>
+        /// <param name="fileName">已加载的文件路径。</param>
+        private void catalogWindow_FileLoaded(string fileName)
+        {
+            UpdateStatusBar();
+            SyncOverview();
+            statusStripInfoLabel.Text = "已从数据目录加载：" + Path.GetFileName(fileName);
+        }
+
+        #endregion
+
+        #region 选择要素与符号系统面板
+        /// <summary>
+        /// 选择要素面板菜单：打开（或激活）并刷新选中要素列表。
+        /// </summary>
+        private void openSelectionPanelMenuItem_Click(object sender, EventArgs e)
+        {
+            if (_selectionPanel == null || _selectionPanel.IsDisposed)
+            {
+                _selectionPanel = new SelectionPanel();
+                _selectionPanel.MainMap = axMapControl1;
+                _selectionPanel.Show(dockPanel1, DockState.DockRight);
+            }
+            _selectionPanel.RefreshSelection();
+            _selectionPanel.Activate();
+        }
+
+        /// <summary>
+        /// 符号系统面板菜单：打开（或激活）并把当前选中图层设为目标。
+        /// </summary>
+        private void openSymbologyPanelMenuItem_Click(object sender, EventArgs e)
+        {
+            if (_symbologyPanel == null || _symbologyPanel.IsDisposed)
+            {
+                _symbologyPanel = new SymbologyPanel();
+                _symbologyPanel.MainMap = axMapControl1;
+                _symbologyPanel.Show(dockPanel1, DockState.DockRight);
+            }
+
+            IFeatureLayer selectedFeatureLayer = GetSelectedLayer() as IFeatureLayer;
+            _symbologyPanel.SetLayer(selectedFeatureLayer);
+            _symbologyPanel.Activate();
+        }
+
+        #endregion
+
+        #region 书签与消息日志面板
+        /// <summary>
+        /// 书签面板菜单：打开（或激活）书签停靠面板。
+        /// </summary>
+        private void openBookmarksPanelMenuItem_Click(object sender, EventArgs e)
+        {
+            if (_bookmarksPanel == null || _bookmarksPanel.IsDisposed)
+            {
+                _bookmarksPanel = new BookmarksPanel();
+                _bookmarksPanel.MainMap = axMapControl1;
+                _bookmarksPanel.BookmarksChanged += Log;
+                _bookmarksPanel.Show(dockPanel1, DockState.DockRight);
+            }
+            _bookmarksPanel.RefreshBookmarks();
+            _bookmarksPanel.Activate();
+        }
+
+        /// <summary>
+        /// 消息日志面板菜单：打开（或激活）日志停靠面板。
+        /// </summary>
+        private void openLogPanelMenuItem_Click(object sender, EventArgs e)
+        {
+            if (_logPanel == null || _logPanel.IsDisposed)
+            {
+                _logPanel = new LogPanel();
+                _logPanel.Show(dockPanel1, DockState.DockBottom);
+            }
+            _logPanel.Activate();
+        }
+
+        /// <summary>
+        /// 记录操作日志：同步状态栏并写入消息日志面板（打开时）。
+        /// </summary>
+        /// <param name="message">日志内容。</param>
+        private void Log(string message)
+        {
+            statusStripInfoLabel.Text = message;
+            if (_logPanel != null && !_logPanel.IsDisposed)
+            {
+                _logPanel.AppendLog(message);
+            }
+        }
+
+        #endregion
+
+        #region 空间聚类
+
+        /// <summary>
+        /// K-Means 聚类菜单：对选中的点图层执行 K-Means 聚类。
+        /// </summary>
+        private void kMeansClusterMenuItem_Click(object sender, EventArgs e)
+        {
+            RunSpatialClustering(ClusteringAlgorithmFactory.KMeans);
+        }
+
+        /// <summary>
+        /// DBSCAN 聚类菜单：对选中的点图层执行 DBSCAN 聚类。
+        /// </summary>
+        private void dbscanClusterMenuItem_Click(object sender, EventArgs e)
+        {
+            RunSpatialClustering(ClusteringAlgorithmFactory.DBSCAN);
+        }
+
+        /// <summary>
+        /// 聚类分析面板菜单：打开（或激活）聚类分析停靠面板。
+        /// </summary>
+        private void openClusterPanelMenuItem_Click(object sender, EventArgs e)
+        {
+            ShowClusterToolPanel();
+        }
+
+        /// <summary>
+        /// 打开（或激活）聚类分析停靠面板，并挂接执行事件。
+        /// </summary>
+        private void ShowClusterToolPanel()
+        {
+            if (_clusterToolWindow == null || _clusterToolWindow.IsDisposed)
+            {
+                _clusterToolWindow = new ClusterToolDockWindow();
+                _clusterToolWindow.ExecuteRequested += clusterTool_ExecuteRequested;
+                _clusterToolWindow.Show(dockPanel1, DockState.DockRight);
+            }
+            _clusterToolWindow.Activate();
+        }
+
+        /// <summary>
+        /// 聚类面板"执行聚类"事件：把面板日志方法传入聚类流程。
+        /// </summary>
+        /// <param name="algorithmName">算法注册名。</param>
+        /// <param name="parameters">面板上组装的参数。</param>
+        private void clusterTool_ExecuteRequested(string algorithmName, AlgorithmParameters parameters)
+        {
+            if (_clusterToolWindow == null || _clusterToolWindow.IsDisposed)
+            {
+                return;
+            }
+
+            RunSpatialClustering(algorithmName, parameters,
+                message => _clusterToolWindow.AppendLog(message));
+        }
+
+        /// <summary>
+        /// 空间聚类菜单入口：弹出参数对话框后走统一聚类流程（无日志输出）。
+        /// </summary>
+        /// <param name="algorithmName">聚类算法注册名。</param>
+        private void RunSpatialClustering(string algorithmName)
+        {
+            AlgorithmParameters parameters = ShowClusterParamsDialog(algorithmName);
+            if (parameters == null)
+            {
+                return;
+            }
+
+            RunSpatialClustering(algorithmName, parameters, null);
+        }
+
+        /// <summary>
+        /// 空间聚类主流程：校验点图层 → 提取点要素 → 工厂创建算法执行聚类 →
+        /// 簇编号回写属性表 → 按簇编号唯一值渲染地图 → 展示聚类结果停靠窗；
+        /// logger 不为空时输出带时间戳的运行日志。
+        /// </summary>
+        /// <param name="algorithmName">聚类算法注册名。</param>
+        /// <param name="parameters">算法参数（由对话框或面板组装）。</param>
+        /// <param name="logger">日志输出方法；null 表示菜单模式不输出日志。</param>
+        private void RunSpatialClustering(string algorithmName, AlgorithmParameters parameters,
+            Action<string> logger)
+        {
+            Action<string> log = logger ?? delegate(string message) { };
+
+            IFeatureLayer featureLayer = GetSelectedFeatureLayer();
+            if (featureLayer == null)
+            {
+                log("未选择图层，或图层非矢量图层！");
+                return;
+            }
+
+            if (GetLayerGeometryType(featureLayer) != esriGeometryType.esriGeometryPoint)
+            {
+                log("空间聚类只支持点图层，请先在图层树中选择一个点图层！");
+                MessageBox.Show("空间聚类只支持点图层，请先在图层树中选择一个点图层！");
+                return;
+            }
+
+            log(string.Format("数据准备：图层 {0}，开始读取点要素...", featureLayer.Name));
+            List<ClusterPoint> points = ExtractClusterPoints(featureLayer.FeatureClass);
+            if (points.Count == 0)
+            {
+                log("该图层没有可聚类的点要素！");
+                MessageBox.Show("该图层没有可聚类的点要素！");
+                return;
+            }
+
+            log(string.Format("数据准备完成：共 {0} 个点要素，开始执行 {1} 聚类...",
+                points.Count, algorithmName));
+
+            IClusterAlgorithm algorithm = ClusteringAlgorithmFactory.Create(algorithmName);
+
+            ClusterResult result;
+            try
+            {
+                result = algorithm.Run(points, parameters);
+            }
+            catch (Exception ex)
+            {
+                log("聚类计算失败：" + ex.Message);
+                MessageBox.Show("聚类计算失败：" + ex.Message);
+                return;
+            }
+
+            WriteClusterIdField(featureLayer.FeatureClass, result);
+
+            // 逐簇统计与质量指标
+            Dictionary<int, int> counts = new Dictionary<int, int>();
+            foreach (ClusterPoint point in result.Points)
+            {
+                if (!counts.ContainsKey(point.ClusterId))
+                {
+                    counts[point.ClusterId] = 0;
+                }
+                counts[point.ClusterId]++;
+            }
+            foreach (int clusterId in result.GetClusterIds())
+            {
+                log(string.Format("    簇 {0}: {1} 个点", clusterId, counts[clusterId]));
+            }
+            if (result.NoiseCount > 0)
+            {
+                log(string.Format("    噪声点: {0} 个（灰色显示）", result.NoiseCount));
+            }
+
+            double sse = ClusterQuality.CalculateSse(result.Points);
+            double silhouette = ClusterQuality.CalculateSilhouette(result.Points);
+            log(string.Format("{0} 聚类完成。参数: {1}。簇数: {2}, 噪声点: {3}, 耗时: {4} ms。SSE={5}, 轮廓系数={6}",
+                result.AlgorithmName,
+                result.ParameterInfo,
+                result.ClusterCount,
+                result.NoiseCount,
+                result.ElapsedMilliseconds,
+                double.IsNaN(sse) ? "无法计算" : sse.ToString("F4"),
+                double.IsNaN(silhouette) ? "无法计算" : silhouette.ToString("F4")));
+
+            IUniqueValueRenderer renderer = BuildClusterRenderer(result);
+            DefineUniqueValueRender(featureLayer, renderer);
+
+            ShowClusterResultWindow(result, featureLayer);
+        }
+
+        /// <summary>
+        /// 按算法注册名弹出对应的参数对话框，返回组装好的参数；取消时返回 null。
+        /// </summary>
+        /// <param name="algorithmName">聚类算法注册名。</param>
+        private AlgorithmParameters ShowClusterParamsDialog(string algorithmName)
+        {
+            if (algorithmName == ClusteringAlgorithmFactory.KMeans)
+            {
+                using (KMeansParamsDialog dialog = new KMeansParamsDialog())
+                {
+                    if (dialog.ShowDialog(this) != DialogResult.OK)
+                    {
+                        return null;
+                    }
+                    return dialog.Parameters;
+                }
+            }
+
+            if (algorithmName == ClusteringAlgorithmFactory.DBSCAN)
+            {
+                using (DBSCANParamsDialog dialog = new DBSCANParamsDialog())
+                {
+                    if (dialog.ShowDialog(this) != DialogResult.OK)
+                    {
+                        return null;
+                    }
+                    return dialog.Parameters;
+                }
+            }
+
+            MessageBox.Show("未支持的聚类算法：" + algorithmName);
+            return null;
+        }
+
+        /// <summary>
+        /// 遍历点图层的全部要素，提取坐标与 OID 组成聚类输入点集。
+        /// </summary>
+        /// <param name="featureClass">点要素类。</param>
+        private List<ClusterPoint> ExtractClusterPoints(IFeatureClass featureClass)
+        {
+            List<ClusterPoint> points = new List<ClusterPoint>();
+
+            IFeatureCursor cursor = featureClass.Search(null, true);
+            try
+            {
+                IFeature feature = cursor.NextFeature();
+                while (feature != null)
+                {
+                    IPoint point = feature.Shape as IPoint;
+                    if (point != null)
+                    {
+                        ClusterPoint clusterPoint = new ClusterPoint();
+                        clusterPoint.Oid = feature.OID;
+                        clusterPoint.X = point.X;
+                        clusterPoint.Y = point.Y;
+                        clusterPoint.ClusterId = -1;
+                        points.Add(clusterPoint);
+                    }
+
+                    UniqueValueRenderHelper.ReleaseComObject(feature);
+                    feature = cursor.NextFeature();
+                }
+            }
+            finally
+            {
+                UniqueValueRenderHelper.ReleaseComObject(cursor);
+            }
+
+            return points;
+        }
+
+        /// <summary>
+        /// 把聚类结果回写为图层的 CLUSTER_ID 属性字段（shapefile 字段名最长 10 字符），
+        /// 噪声点写 -1；既供唯一值渲染使用，也方便在属性表中查看簇编号。
+        /// </summary>
+        /// <param name="featureClass">点要素类。</param>
+        /// <param name="result">聚类结果。</param>
+        private void WriteClusterIdField(IFeatureClass featureClass, ClusterResult result)
+        {
+            try
+            {
+                const string fieldName = "CLUSTER_ID";
+                ITable table = (ITable)featureClass;
+                int fieldIndex = table.FindField(fieldName);
+
+                // 字段不存在时先添加整型字段
+                if (fieldIndex < 0)
+                {
+                    // 互操作嵌入模式下 coclass 不能直接 new，改用带 CoClass 特性的接口实例化
+                    IFieldEdit fieldEdit = (IFieldEdit)new Field();
+                    fieldEdit.Name_2 = fieldName;
+                    fieldEdit.Type_2 = esriFieldType.esriFieldTypeInteger;
+                    fieldEdit.AliasName_2 = "聚类编号";
+                    featureClass.AddField(fieldEdit);
+                    fieldIndex = table.FindField(fieldName);
+                }
+
+                // OID → 簇编号映射
+                Dictionary<int, int> oidClusterMap = new Dictionary<int, int>();
+                foreach (ClusterPoint point in result.Points)
+                {
+                    oidClusterMap[point.Oid] = point.ClusterId;
+                }
+
+                int oidIndex = table.FindField(table.OIDFieldName);
+                ICursor cursor = table.Update(null, true);
+                try
+                {
+                    IRow row = cursor.NextRow();
+                    while (row != null)
+                    {
+                        int oid = Convert.ToInt32(row.get_Value(oidIndex));
+                        row.set_Value(fieldIndex, oidClusterMap.ContainsKey(oid)
+                            ? oidClusterMap[oid]
+                            : -1);
+                        cursor.UpdateRow(row);
+                        UniqueValueRenderHelper.ReleaseComObject(row);
+                        row = cursor.NextRow();
+                    }
+                }
+                finally
+                {
+                    UniqueValueRenderHelper.ReleaseComObject(cursor);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("回写聚类编号字段失败：" + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// 按簇编号构建唯一值渲染器：各簇取调色板颜色，噪声点为灰色。
+        /// </summary>
+        /// <param name="result">聚类结果。</param>
+        private IUniqueValueRenderer BuildClusterRenderer(ClusterResult result)
+        {
+            IUniqueValueRenderer renderer = new UniqueValueRenderer();
+            renderer.FieldCount = 1;
+            renderer.set_Field(0, "CLUSTER_ID");
+            renderer.set_FieldType(0, false);
+            renderer.FieldDelimiter = ",";
+
+            foreach (int clusterId in result.GetClusterIds())
+            {
+                Color clusterColor = ClusterColorPalette.GetColor(clusterId);
+                ISimpleMarkerSymbol symbol = new SimpleMarkerSymbol();
+                symbol.Style = esriSimpleMarkerStyle.esriSMSCircle;
+                symbol.Size = 8;
+                symbol.Outline = true;
+                symbol.OutlineSize = 1;
+                symbol.OutlineColor = UniqueValueRenderHelper.CreateColor(0, 0, 0);
+                symbol.Color = UniqueValueRenderHelper.CreateColor(
+                    clusterColor.R, clusterColor.G, clusterColor.B);
+                renderer.AddValue(clusterId.ToString(), "簇 " + clusterId, (ISymbol)symbol);
+            }
+
+            if (result.NoiseCount > 0)
+            {
+                Color noiseColor = ClusterColorPalette.GetColor(-1);
+                ISimpleMarkerSymbol noiseSymbol = new SimpleMarkerSymbol();
+                noiseSymbol.Style = esriSimpleMarkerStyle.esriSMSCircle;
+                noiseSymbol.Size = 8;
+                noiseSymbol.Outline = true;
+                noiseSymbol.OutlineSize = 1;
+                noiseSymbol.OutlineColor = UniqueValueRenderHelper.CreateColor(0, 0, 0);
+                noiseSymbol.Color = UniqueValueRenderHelper.CreateColor(
+                    noiseColor.R, noiseColor.G, noiseColor.B);
+                renderer.AddValue("-1", "噪声", (ISymbol)noiseSymbol);
+            }
+
+            return renderer;
+        }
+
+        /// <summary>
+        /// 展示聚类结果停靠窗；再次聚类时先关闭旧窗口，
+        /// 并把"双击簇行"事件接到地图闪亮。
+        /// </summary>
+        /// <param name="result">聚类结果。</param>
+        /// <param name="featureLayer">参与聚类的图层。</param>
+        private void ShowClusterResultWindow(ClusterResult result, IFeatureLayer featureLayer)
+        {
+            if (_clusterResultWindow != null && !_clusterResultWindow.IsDisposed)
+            {
+                _clusterResultWindow.Close();
+            }
+
+            _clusterResult = result;
+            _clusterFeatureLayer = featureLayer;
+
+            _clusterResultWindow = new ClusterResultDockWindow(result);
+            _clusterResultWindow.ClusterSelected += clusterResult_ClusterSelected;
+            _clusterResultWindow.Show(dockPanel1, DockState.DockRight);
+            _clusterResultWindow.Activate();
+        }
+
+        /// <summary>
+        /// 结果窗双击簇行：在地图上闪亮该簇的全部要素。
+        /// </summary>
+        /// <param name="clusterId">簇编号（负值表示噪声）。</param>
+        private void clusterResult_ClusterSelected(int clusterId)
+        {
+            if (_clusterResult == null || _clusterFeatureLayer == null)
+            {
+                return;
+            }
+
+            IFeatureClass featureClass = _clusterFeatureLayer.FeatureClass;
+            if (featureClass == null)
+            {
+                return;
+            }
+
+            List<int> oids = new List<int>();
+            foreach (ClusterPoint point in _clusterResult.Points)
+            {
+                if (clusterId < 0 ? point.ClusterId < 0 : point.ClusterId == clusterId)
+                {
+                    oids.Add(point.Oid);
+                }
+            }
+            if (oids.Count == 0)
+            {
+                return;
+            }
+
+            IQueryFilter queryFilter = new QueryFilter();
+            queryFilter.WhereClause = string.Format("{0} IN ({1})",
+                featureClass.OIDFieldName, string.Join(",", oids));
+
+            // 把簇内全部点合成 Multipoint 一次性闪烁：GeometryBag 缺空间参考时
+            // FlashShape 无法识别内部几何（COM 0x800A0406），Multipoint 更稳妥
+            IMultipoint multipoint = (IMultipoint)new Multipoint();
+            IGeometryCollection mpCollection = (IGeometryCollection)multipoint;
+
+            IFeatureCursor cursor = featureClass.Search(queryFilter, true);
+            try
+            {
+                IFeature feature = cursor.NextFeature();
+                while (feature != null)
+                {
+                    IGeometry shape = feature.ShapeCopy;
+                    if (shape != null && !shape.IsEmpty)
+                    {
+                        if (multipoint.SpatialReference == null && shape.SpatialReference != null)
+                        {
+                            multipoint.SpatialReference = shape.SpatialReference;
+                        }
+                        mpCollection.AddGeometry(shape);
+                    }
+                    UniqueValueRenderHelper.ReleaseComObject(feature);
+                    feature = cursor.NextFeature();
+                }
+            }
+            finally
+            {
+                UniqueValueRenderHelper.ReleaseComObject(cursor);
+            }
+
+            if (mpCollection.GeometryCount > 0)
+            {
+                axMapControl1.FlashShape((IGeometry)multipoint, 3, 300,
+                    UniqueValueRenderHelper.CreateFlashSymbol((IGeometry)multipoint));
+            }
+        }
+
+        #endregion
     }
 
 }

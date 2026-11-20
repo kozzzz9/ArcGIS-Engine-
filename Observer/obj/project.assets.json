@@ -111,11 +111,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "E:\\gisarta\\gis实习\\19.实习七_观察者模式\\Observer\\Observer.csproj",
+      "projectUniqueName": "E:\\ArcGIS-Engine-\\Observer\\Observer.csproj",
       "projectName": "Observer",
-      "projectPath": "E:\\gisarta\\gis实习\\19.实习七_观察者模式\\Observer\\Observer.csproj",
+      "projectPath": "E:\\ArcGIS-Engine-\\Observer\\Observer.csproj",
       "packagesPath": "C:\\Users\\17901\\.nuget\\packages\\",
-      "outputPath": "E:\\gisarta\\gis实习\\19.实习七_观察者模式\\Observer\\obj\\",
+      "outputPath": "E:\\ArcGIS-Engine-\\Observer\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "D:\\Microsoft Visual Studio\\Shared\\NuGetPackages"

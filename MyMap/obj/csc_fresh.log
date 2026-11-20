@@ -1,0 +1,13 @@
+MyMap.Designer.cs(1034,46): warning CS0108: “MyMap.MyMap.Layout”隐藏了继承的成员“System.Windows.Forms.Control.Layout”。如果是有意隐藏，请使用关键字 new。
+c:\Windows\Microsoft.NET\Framework64\v4.0.30319\System.Windows.Forms.dll: (与前一个警告相关的符号位置)
+warning CS1762: 由于存在对由程序集“c:\Program Files (x86)\ArcGIS\DeveloperKit10.8\DotNet\ESRI.ArcGIS.AxControls.dll”创建的程序集的间接引用，因此创建了对嵌入的互操作程序集“c:\Program Files (x86)\ArcGIS\DeveloperKit10.8\DotNet\ESRI.ArcGIS.Controls.dll”的引用。请考虑更改其中一个程序集的“嵌入互操作类型”属性。
+warning CS1762: 由于存在对由程序集“c:\Program Files (x86)\ArcGIS\DeveloperKit10.8\DotNet\ESRI.ArcGIS.AxControls.dll”创建的程序集的间接引用，因此创建了对嵌入的互操作程序集“c:\Program Files (x86)\ArcGIS\DeveloperKit10.8\DotNet\ESRI.ArcGIS.Carto.dll”的引用。请考虑更改其中一个程序集的“嵌入互操作类型”属性。
+warning CS1762: 由于存在对由程序集“c:\Program Files (x86)\ArcGIS\DeveloperKit10.8\DotNet\ESRI.ArcGIS.AxControls.dll”创建的程序集的间接引用，因此创建了对嵌入的互操作程序集“c:\Program Files (x86)\ArcGIS\DeveloperKit10.8\DotNet\ESRI.ArcGIS.Geometry.dll”的引用。请考虑更改其中一个程序集的“嵌入互操作类型”属性。
+warning CS1762: 由于存在对由程序集“c:\Program Files (x86)\ArcGIS\DeveloperKit10.8\DotNet\ESRI.ArcGIS.AxControls.dll”创建的程序集的间接引用，因此创建了对嵌入的互操作程序集“c:\Program Files (x86)\ArcGIS\DeveloperKit10.8\DotNet\ESRI.ArcGIS.SystemUI.dll”的引用。请考虑更改其中一个程序集的“嵌入互操作类型”属性。
+warning CS1762: 由于存在对由程序集“c:\Program Files (x86)\ArcGIS\DeveloperKit10.8\DotNet\ESRI.ArcGIS.AxControls.dll”创建的程序集的间接引用，因此创建了对嵌入的互操作程序集“c:\Program Files (x86)\ArcGIS\DeveloperKit10.8\DotNet\ESRI.ArcGIS.System.dll”的引用。请考虑更改其中一个程序集的“嵌入互操作类型”属性。
+warning CS1762: 由于存在对由程序集“c:\Program Files (x86)\ArcGIS\DeveloperKit10.8\DotNet\ESRI.ArcGIS.AxControls.dll”创建的程序集的间接引用，因此创建了对嵌入的互操作程序集“c:\Program Files (x86)\ArcGIS\DeveloperKit10.8\DotNet\ESRI.ArcGIS.Output.dll”的引用。请考虑更改其中一个程序集的“嵌入互操作类型”属性。
+warning CS1762: 由于存在对由程序集“c:\Program Files (x86)\ArcGIS\DeveloperKit10.8\DotNet\ESRI.ArcGIS.AxControls.dll”创建的程序集的间接引用，因此创建了对嵌入的互操作程序集“c:\Program Files (x86)\ArcGIS\DeveloperKit10.8\DotNet\ESRI.ArcGIS.3DAnalyst.dll”的引用。请考虑更改其中一个程序集的“嵌入互操作类型”属性。
+warning CS1762: 由于存在对由程序集“c:\Program Files (x86)\ArcGIS\DeveloperKit10.8\DotNet\ESRI.ArcGIS.AxControls.dll”创建的程序集的间接引用，因此创建了对嵌入的互操作程序集“c:\Program Files (x86)\ArcGIS\DeveloperKit10.8\DotNet\ESRI.ArcGIS.GlobeCore.dll”的引用。请考虑更改其中一个程序集的“嵌入互操作类型”属性。
+warning CS1762: 由于存在对由程序集“c:\Program Files (x86)\ArcGIS\DeveloperKit10.8\DotNet\ESRI.ArcGIS.AxControls.dll”创建的程序集的间接引用，因此创建了对嵌入的互操作程序集“c:\Program Files (x86)\ArcGIS\DeveloperKit10.8\DotNet\ESRI.ArcGIS.Display.dll”的引用。请考虑更改其中一个程序集的“嵌入互操作类型”属性。
+warning CS1762: 由于存在对由程序集“c:\Program Files (x86)\ArcGIS\DeveloperKit10.8\DotNet\ESRI.ArcGIS.AxControls.dll”创建的程序集的间接引用，因此创建了对嵌入的互操作程序集“c:\Windows\assembly\GAC\stdole\7.0.3300.0__b03f5f7f11d50a3a\stdole.dll”的引用。请考虑更改其中一个程序集的“嵌入互操作类型”属性。
+MyMap.cs(54,35): warning CS0649: 从未对字段“MyMap.MyMap._addTextAnnotationItem”赋值，字段将一直保持其默认值 null

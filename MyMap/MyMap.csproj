@@ -90,6 +90,14 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
+    <Reference Include="WeifenLuo.WinFormsUI.Docking">
+      <HintPath>Libs\WeifenLuo.WinFormsUI.Docking.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="WeifenLuo.WinFormsUI.Docking.ThemeVS2015">
+      <HintPath>Libs\WeifenLuo.WinFormsUI.Docking.ThemeVS2015.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AttributeQueryDialog.cs">
@@ -97,6 +105,15 @@
     </Compile>
     <Compile Include="AttributeQueryDialog.Designer.cs">
       <DependentUpon>AttributeQueryDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ColorPickerButton.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="BarChartDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="BarChartDialog.Designer.cs">
+      <DependentUpon>BarChartDialog.cs</DependentUpon>
     </Compile>
     <Compile Include="BookmarkDialog.cs">
       <SubType>Form</SubType>
@@ -115,6 +132,71 @@
     </Compile>
     <Compile Include="BufferAnalysisDialog.Designer.cs">
       <DependentUpon>BufferAnalysisDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ClusterPoint.cs" />
+    <Compile Include="ClusterResult.cs" />
+    <Compile Include="AlgorithmParameters.cs" />
+    <Compile Include="KMeansParameters.cs" />
+    <Compile Include="DBSCANParameters.cs" />
+    <Compile Include="IClusterAlgorithm.cs" />
+    <Compile Include="KMeansAlgorithm.cs" />
+    <Compile Include="DBSCANAlgorithm.cs" />
+    <Compile Include="HierarchicalParameters.cs" />
+    <Compile Include="HierarchicalClusterAlgorithm.cs" />
+    <Compile Include="ClusteringAlgorithmFactory.cs" />
+    <Compile Include="KMeansParamsDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="KMeansParamsDialog.Designer.cs">
+      <DependentUpon>KMeansParamsDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="DBSCANParamsDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="DBSCANParamsDialog.Designer.cs">
+      <DependentUpon>DBSCANParamsDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ClusterResultDockWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ClusterResultDockWindow.Designer.cs">
+      <DependentUpon>ClusterResultDockWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SelectionPanel.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SelectionPanel.Designer.cs">
+      <DependentUpon>SelectionPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="BookmarksPanel.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="BookmarksPanel.Designer.cs">
+      <DependentUpon>BookmarksPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="LogPanel.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="LogPanel.Designer.cs">
+      <DependentUpon>LogPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SymbologyPanel.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SymbologyPanel.Designer.cs">
+      <DependentUpon>SymbologyPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="CatalogDockWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="CatalogDockWindow.Designer.cs">
+      <DependentUpon>CatalogDockWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ClusterToolDockWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ClusterToolDockWindow.Designer.cs">
+      <DependentUpon>ClusterToolDockWindow.cs</DependentUpon>
     </Compile>
     <Compile Include="FieldStatisticsDialog.cs">
       <SubType>Form</SubType>
@@ -188,6 +270,9 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="BarChartDialog.resx">
+      <DependentUpon>BarChartDialog.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="BookmarkDialog.resx">
       <DependentUpon>BookmarkDialog.cs</DependentUpon>
     </EmbeddedResource>

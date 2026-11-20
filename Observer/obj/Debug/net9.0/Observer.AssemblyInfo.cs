@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Observer")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+55ba0b57f313524397c0e1ac6294cd4990279a1a")]
 [assembly: System.Reflection.AssemblyProductAttribute("Observer")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Observer")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

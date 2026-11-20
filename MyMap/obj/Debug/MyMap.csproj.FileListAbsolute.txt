@@ -1,0 +1,16 @@
+E:\ArcGIS-Engine-\MyMap\obj\Debug\MyMap.csprojResolveAssemblyReference.cache
+E:\ArcGIS-Engine-\MyMap\obj\Debug\MyMap.BookmarkDialog.resources
+E:\ArcGIS-Engine-\MyMap\obj\Debug\MyMap.FeatureAttributeTable.resources
+E:\ArcGIS-Engine-\MyMap\obj\Debug\MyMap.MyMap.resources
+E:\ArcGIS-Engine-\MyMap\obj\Debug\MyMap.Properties.Resources.resources
+E:\ArcGIS-Engine-\MyMap\obj\Debug\MyMap.SimpleRenderDialog.resources
+E:\ArcGIS-Engine-\MyMap\obj\Debug\MyMap.SymbolSelectDialog.resources
+E:\ArcGIS-Engine-\MyMap\obj\Debug\MyMap.UniqueValueRenderDialog.resources
+E:\ArcGIS-Engine-\MyMap\obj\Debug\MyMap.csproj.GenerateResource.Cache
+E:\ArcGIS-Engine-\MyMap\bin\Debug\MyMap.exe.config
+E:\ArcGIS-Engine-\MyMap\bin\Debug\MyMap.exe
+E:\ArcGIS-Engine-\MyMap\bin\Debug\MyMap.pdb
+E:\ArcGIS-Engine-\MyMap\bin\Debug\WeifenLuo.WinFormsUI.Docking.dll
+E:\ArcGIS-Engine-\MyMap\bin\Debug\WeifenLuo.WinFormsUI.Docking.ThemeVS2015.dll
+E:\ArcGIS-Engine-\MyMap\obj\Debug\MyMap.exe
+E:\ArcGIS-Engine-\MyMap\obj\Debug\MyMap.pdb
